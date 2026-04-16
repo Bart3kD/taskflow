@@ -5,7 +5,7 @@ import { tasks, statusTokens } from '$lib/db/schema';
 import { requireAuth } from '$lib/auth/jwt';
 import { zUpdateTask } from '$lib/types';
 import { eq } from 'drizzle-orm';
-import { addDays } from '$lib/utils/date';
+import { addDays } from '$lib/utils';
 
 export const GET: RequestHandler = async (event) => {
 	const auth = await requireAuth(event);
