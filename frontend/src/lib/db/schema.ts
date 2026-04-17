@@ -29,6 +29,8 @@ export const users = pgTable('users', {
 	email: text('email').notNull().unique(),
 	passwordHash: text('password_hash').notNull(),
 	telegramChatId: text('telegram_chat_id'),
+	telegramLinkToken: text('telegram_link_token').unique(),
+	telegramLinkExpiresAt: timestamp('telegram_link_expires_at'),
 	role: roleEnum('role').notNull().default('member'),
 	createdAt: timestamp('created_at').notNull().defaultNow()
 });

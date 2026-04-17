@@ -1,7 +1,7 @@
 import type { Task, User } from '$lib/db/schema';
 import { TELEGRAM_BOT_TOKEN } from '$env/static/private';
 
-async function sendMessage(chatId: string, text: string): Promise<void> {
+export async function sendMessage(chatId: string, text: string): Promise<void> {
 	await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },

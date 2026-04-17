@@ -11,9 +11,42 @@
 
 	// User fields
 	let name = $state(untrack(() => data.member.name));
-	let telegramChatId = $state(untrack(() => data.member.telegramChatId ?? ''));
 	let userError = $state('');
 	let userLoading = $state(false);
+
+	// Telegram connection
+	let telegramLinkUrl = $state('');
+	let telegramLinkLoading = $state(false);
+	let telegramLinkCopied = $state(false);
+
+	async function generateTelegramLink() {
+		telegramLinkLoading = true;
+		const res = await fetch('/api/telegram/link', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ userId: data.member.id })
+		});
+		telegramLinkLoading = false;
+		if (res.ok) {
+			const { url } = await res.json();
+			telegramLinkUrl = url;
+		}
+	}
+
+	async function disconnectTelegram() {
+		await fetch(`/api/users/${data.member.id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ telegramChatId: null })
+		});
+		await invalidateAll();
+	}
+
+	function copyLink() {
+		navigator.clipboard.writeText(telegramLinkUrl);
+		telegramLinkCopied = true;
+		setTimeout(() => (telegramLinkCopied = false), 2000);
+	}
 
 	// Schedule fields
 	let reportFrequency = $state(untrack(() => data.schedule?.reportFrequency ?? 'every_n_days'));
@@ -35,7 +68,7 @@
 		const res = await fetch(`/api/users/${data.member.id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name, telegramChatId: telegramChatId || null })
+			body: JSON.stringify({ name })
 		});
 		userLoading = false;
 		if (!res.ok) userError = 'Failed to save changes.';
@@ -92,11 +125,6 @@
 				<Input id="email" value={data.member.email} disabled class="opacity-60" />
 			</div>
 
-			<div class="space-y-1.5">
-				<Label for="telegram">Telegram Chat ID</Label>
-				<Input id="telegram" bind:value={telegramChatId} placeholder="Optional" />
-			</div>
-
 			{#if userError}
 				<p class="text-[0.875rem] text-destructive">{userError}</p>
 			{/if}
@@ -105,6 +133,40 @@
 				{userLoading ? 'Saving…' : 'Save'}
 			</Button>
 		</form>
+
+		<div class="border-t border-border pt-5 space-y-3">
+			<div class="flex items-center justify-between">
+				<div>
+					<p class="text-[0.875rem] font-medium">Telegram</p>
+					{#if data.member.telegramChatId}
+						<p class="text-[0.75rem] text-green-600 dark:text-green-400">✓ Connected</p>
+					{:else}
+						<p class="text-[0.75rem] text-muted-foreground">Not connected</p>
+					{/if}
+				</div>
+				{#if data.member.telegramChatId}
+					<Button variant="outline" onclick={disconnectTelegram}>Disconnect</Button>
+				{:else}
+					<Button variant="outline" onclick={generateTelegramLink} disabled={telegramLinkLoading}>
+						{telegramLinkLoading ? 'Generating…' : 'Generate connect link'}
+					</Button>
+				{/if}
+			</div>
+
+			{#if telegramLinkUrl}
+				<div class="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+					<p class="text-[0.75rem] text-muted-foreground">
+						Share this link with <strong>{data.member.name}</strong>. After clicking it and opening the bot, Telegram will be connected automatically. Link expires in 24h.
+					</p>
+					<div class="flex items-center gap-2">
+						<code class="flex-1 truncate text-[0.75rem]">{telegramLinkUrl}</code>
+						<Button variant="outline" size="sm" onclick={copyLink}>
+							{telegramLinkCopied ? 'Copied!' : 'Copy'}
+						</Button>
+					</div>
+				</div>
+			{/if}
+		</div>
 	</section>
 
 	<!-- Notification schedule section -->
