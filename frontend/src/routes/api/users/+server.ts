@@ -1,10 +1,17 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { randomBytes } from 'crypto';
 import { db } from '$lib/db';
 import { users, notificationSchedules } from '$lib/db/schema';
 import { requireAdmin } from '$lib/auth/jwt';
 import { zCreateUser } from '$lib/types';
+import { sendWelcomeEmail } from '$lib/notifications/email';
+import { APP_URL } from '$env/static/private';
 import bcrypt from 'bcryptjs';
+
+function generateTempPassword(): string {
+	return randomBytes(9).toString('base64url');
+}
 
 export const GET: RequestHandler = async (event) => {
 	await requireAdmin(event);
@@ -30,9 +37,10 @@ export const POST: RequestHandler = async (event) => {
 	const parsed = zCreateUser.safeParse(body);
 	if (!parsed.success) throw error(400, JSON.stringify(parsed.error.flatten()));
 
-	const { name, email, password, role, telegramChatId } = parsed.data;
+	const { name, email, role, telegramChatId } = parsed.data;
 
-	const passwordHash = await bcrypt.hash(password, 12);
+	const tempPassword = generateTempPassword();
+	const passwordHash = await bcrypt.hash(tempPassword, 12);
 
 	const [user] = await db
 		.insert(users)
@@ -46,6 +54,10 @@ export const POST: RequestHandler = async (event) => {
 		});
 
 	await db.insert(notificationSchedules).values({ userId: user.id });
+
+	await sendWelcomeEmail({ email, name }, tempPassword, APP_URL).catch((err) => {
+		console.error('Failed to send welcome email:', err);
+	});
 
 	return json(user, { status: 201 });
 };

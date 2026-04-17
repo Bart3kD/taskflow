@@ -94,6 +94,7 @@
 				<option value="in_progress">In Progress</option>
 				<option value="done">Done</option>
 				<option value="overdue">Overdue</option>
+				<option value="problem">Problem</option>
 			</select>
 		</div>
 	{/if}

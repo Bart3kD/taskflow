@@ -3,15 +3,20 @@
 	import type { LayoutData } from './$types';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { LayoutDashboard, CheckSquare, Users, LogOut } from 'lucide-svelte';
+	import { LayoutDashboard, CheckSquare, Users, LogOut, Settings } from 'lucide-svelte';
 
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
 
-	const navItems = [
-		{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-		{ href: '/tasks', label: 'Tasks', icon: CheckSquare },
-		{ href: '/team', label: 'Team', icon: Users }
+	const allNavItems = [
+		{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
+		{ href: '/tasks', label: 'Tasks', icon: CheckSquare, adminOnly: false },
+		{ href: '/team', label: 'Team', icon: Users, adminOnly: true },
+		{ href: '/settings', label: 'Settings', icon: Settings, adminOnly: false }
 	];
+
+	const navItems = $derived(
+		allNavItems.filter((item) => !item.adminOnly || data.user.role === 'admin')
+	);
 
 	async function logout() {
 		await fetch('/api/auth/logout', { method: 'POST' });

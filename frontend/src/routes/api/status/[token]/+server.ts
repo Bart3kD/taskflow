@@ -35,11 +35,10 @@ export const POST: RequestHandler = async ({ params, request }) => {
 	if (!parsed.success) throw error(400, 'Invalid status');
 
 	const { status } = parsed.data;
-	const taskStatus = status === 'problem' ? 'in_progress' : status;
 
 	await db
 		.update(tasks)
-		.set({ status: taskStatus, updatedAt: new Date() })
+		.set({ status, updatedAt: new Date() })
 		.where(eq(tasks.id, row.taskId));
 
 	await db
@@ -47,5 +46,5 @@ export const POST: RequestHandler = async ({ params, request }) => {
 		.set({ usedAt: new Date() })
 		.where(eq(statusTokens.token, params.token));
 
-	return json({ ok: true, status: taskStatus });
+	return json({ ok: true, status });
 };

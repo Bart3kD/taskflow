@@ -17,6 +17,7 @@
 
 	// Schedule fields
 	let reportFrequency = $state(untrack(() => data.schedule?.reportFrequency ?? 'every_n_days'));
+	let reportEveryNDays = $state(untrack(() => data.schedule?.reportEveryNDays ?? 7));
 	let reportDayOfWeek = $state(untrack(() => data.schedule?.reportDayOfWeek ?? 1));
 	let reportTime = $state(untrack(() => data.schedule?.reportTime ?? '09:00'));
 	let reportChannel = $state(untrack(() => data.schedule?.reportChannel ?? 'email'));
@@ -56,6 +57,7 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				reportFrequency,
+				reportEveryNDays: reportFrequency === 'every_n_days' ? reportEveryNDays : undefined,
 				reportDayOfWeek: reportFrequency === 'weekly' ? reportDayOfWeek : undefined,
 				reportTime,
 				reportChannel,
@@ -121,6 +123,13 @@
 					<option value="weekly">Weekly</option>
 				</select>
 			</div>
+
+			{#if reportFrequency === 'every_n_days'}
+				<div class="space-y-1.5">
+					<Label for="repN">Every N days</Label>
+					<Input id="repN" type="number" min="1" bind:value={reportEveryNDays} />
+				</div>
+			{/if}
 
 			{#if reportFrequency === 'weekly'}
 				<div class="space-y-1.5">

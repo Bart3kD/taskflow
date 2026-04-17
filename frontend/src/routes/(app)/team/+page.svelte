@@ -8,7 +8,6 @@
 	let showAdd = $state(false);
 	let addName = $state('');
 	let addEmail = $state('');
-	let addPassword = $state('');
 	let addRole = $state<'admin' | 'member'>('member');
 	let addError = $state('');
 	let addLoading = $state(false);
@@ -20,14 +19,13 @@
 		const res = await fetch('/api/users', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name: addName, email: addEmail, password: addPassword, role: addRole })
+			body: JSON.stringify({ name: addName, email: addEmail, role: addRole })
 		});
 		addLoading = false;
 		if (res.ok) {
 			showAdd = false;
 			addName = '';
 			addEmail = '';
-			addPassword = '';
 			location.reload();
 		} else {
 			addError = 'Failed to add user.';
@@ -85,19 +83,9 @@
 				/>
 			</div>
 
-			<div class="space-y-1">
-				<label class="text-[0.8125rem] font-medium" for="add-pass">Password</label>
-				<input
-					id="add-pass"
-					type="password"
-					bind:value={addPassword}
-					required
-					minlength="8"
-					class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-[0.875rem]"
-				/>
-			</div>
+			<p class="text-[0.75rem] text-muted-foreground">A temporary password will be generated and sent to the member's email.</p>
 
-			{#if addError}
+{#if addError}
 				<p class="text-[0.875rem] text-destructive">{addError}</p>
 			{/if}
 

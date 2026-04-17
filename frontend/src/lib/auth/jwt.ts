@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import type { RequestEvent } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
+import { JWT_SECRET } from '$env/static/private';
 
 type TokenPayload = {
 	userId: string;
@@ -8,9 +9,7 @@ type TokenPayload = {
 };
 
 function getSecret(): Uint8Array {
-	const secret = process.env.JWT_SECRET;
-	if (!secret) throw new Error('JWT_SECRET is not set');
-	return new TextEncoder().encode(secret);
+	return new TextEncoder().encode(JWT_SECRET);
 }
 
 export async function signToken(payload: TokenPayload): Promise<string> {

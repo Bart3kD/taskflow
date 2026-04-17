@@ -27,9 +27,13 @@ export const zLoginRequest = z.object({
 export const zCreateUser = z.object({
 	name: z.string().min(1),
 	email: z.email(),
-	password: z.string().min(8),
 	role: z.enum(['admin', 'member']).default('member'),
 	telegramChatId: z.string().optional()
+});
+
+export const zChangePassword = z.object({
+	currentPassword: z.string().min(1).optional(),
+	newPassword: z.string().min(8)
 });
 
 export const zUpdateUser = z.object({
@@ -62,7 +66,7 @@ export const zUpdateTask = z.object({
 	title: z.string().min(1).optional(),
 	description: z.string().nullable().optional(),
 	assignedTo: z.uuid().optional(),
-	status: z.enum(['pending', 'in_progress', 'done', 'overdue']).optional(),
+	status: z.enum(['pending', 'in_progress', 'done', 'overdue', 'problem']).optional(),
 	deadlineType: z.enum(['once', 'recurring']).optional(),
 	recurrenceType: z
 		.enum(['every_n_days', 'day_of_month', 'day_of_week', 'first_day_of_month', 'last_day_of_month'])
@@ -82,7 +86,8 @@ export const zUpdateNotificationSchedule = z.object({
 	reportTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
 	reportChannel: z.enum(['email', 'telegram', 'both']).optional(),
 	reminderChannel: z.enum(['email', 'telegram', 'both']).optional(),
-	reminderDaysBefore: z.array(z.number().int().min(0)).optional()
+	reminderDaysBefore: z.array(z.number().int().min(0)).optional(),
+	reportEveryNDays: z.number().int().positive().optional()
 });
 
 export type LoginRequest = z.infer<typeof zLoginRequest>;

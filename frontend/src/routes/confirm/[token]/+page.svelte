@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { page } from '$app/stores';
 
 	let { data }: { data: PageData } = $props();
 
@@ -10,8 +9,6 @@
 	let chosen = $state<StatusChoice | null>(null);
 	let loading = $state(false);
 	let errorMsg = $state('');
-
-	const token = $page.params.token;
 
 	const options: { value: StatusChoice; label: string; description: string; color: string }[] = [
 		{
@@ -39,20 +36,25 @@
 		chosen = status;
 		errorMsg = '';
 
-		const res = await fetch(`/api/status/${token}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ status })
-		});
+		try {
+			const res = await fetch(`/api/status/${data.token}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ status })
+			});
 
-		loading = false;
-
-		if (res.ok) {
-			submitted = true;
-		} else {
-			const text = await res.text().catch(() => 'Unknown error');
-			errorMsg = text;
+			if (res.ok) {
+				submitted = true;
+			} else {
+				const body = await res.json().catch(() => ({ message: 'Unknown error' }));
+				errorMsg = body.message ?? 'Unknown error';
+				chosen = null;
+			}
+		} catch {
+			errorMsg = 'Network error — please try again.';
 			chosen = null;
+		} finally {
+			loading = false;
 		}
 	}
 </script>
@@ -64,7 +66,7 @@
 			<p class="mt-1 text-[0.875rem] text-muted-foreground">for: <strong>{data.task.title}</strong></p>
 		</div>
 
-		{#if submitted}
+		{#if data.confirmed || submitted}
 			<div class="rounded-xl border border-green-300 bg-green-50 p-6 text-center dark:bg-green-950/20">
 				<p class="text-[1.25rem] font-semibold text-green-800 dark:text-green-300">✓ Thank you!</p>
 				<p class="mt-1 text-[0.875rem] text-green-700 dark:text-green-400">
