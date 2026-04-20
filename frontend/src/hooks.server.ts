@@ -13,13 +13,17 @@ if (TELEGRAM_BOT_TOKEN && APP_URL && !APP_URL.includes('localhost')) {
 	}).catch((err) => console.error('Telegram webhook registration failed:', err));
 }
 
-cron.schedule('0 * * * *', async () => {
-	try {
-		await processOverdue();
-		await processAssignmentNotifications();
-		await processReminders();
-		await processReports();
-	} catch (err) {
-		console.error('Scheduler error:', err);
-	}
-});
+const g = globalThis as typeof globalThis & { __cronRegistered?: boolean };
+if (!g.__cronRegistered) {
+	g.__cronRegistered = true;
+	cron.schedule('0 * * * *', async () => {
+		try {
+			await processOverdue();
+			await processAssignmentNotifications();
+			await processReminders();
+			await processReports();
+		} catch (err) {
+			console.error('Scheduler error:', err);
+		}
+	});
+}

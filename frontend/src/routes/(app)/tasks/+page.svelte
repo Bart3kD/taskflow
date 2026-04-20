@@ -23,7 +23,10 @@
 
 	function formatDate(d: Date | null) {
 		if (!d) return '—';
-		return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+		const dt = new Date(d);
+		const date = dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+		const time = dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+		return `${date}, ${time}`;
 	}
 </script>
 

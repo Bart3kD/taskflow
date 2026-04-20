@@ -8,6 +8,7 @@
 
 	let filterStatus = $state('');
 	let filterMember = $state('');
+	let sortDeadline = $state<'asc' | 'desc' | null>(null);
 
 	const statusColors: Record<string, string> = {
 		pending: 'bg-muted text-muted-foreground',
@@ -26,11 +27,19 @@
 	};
 
 	const filtered = $derived.by(() => {
-		return data.tasks.filter((t) => {
+		const result = data.tasks.filter((t) => {
 			if (filterStatus && t.status !== filterStatus) return false;
 			if (filterMember && t.assignedTo !== filterMember) return false;
 			return true;
 		});
+		if (sortDeadline) {
+			result.sort((a, b) => {
+				const da = a.deadlineDate ? new Date(a.deadlineDate).getTime() : Infinity;
+				const db = b.deadlineDate ? new Date(b.deadlineDate).getTime() : Infinity;
+				return sortDeadline === 'asc' ? da - db : db - da;
+			});
+		}
+		return result;
 	});
 
 	const counts = $derived.by(() => {
@@ -43,7 +52,10 @@
 
 	function formatDate(d: Date | null) {
 		if (!d) return '—';
-		return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+		const dt = new Date(d);
+		const date = dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+		const time = dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+		return `${date}, ${time}`;
 	}
 
 	function isOverdue(t: (typeof data.tasks)[0]) {
@@ -119,7 +131,14 @@
 		{#if filtered.length === 0}
 			<div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
 				<AlertCircle class="size-8" />
-				<p class="text-[0.875rem]">No tasks found.</p>
+				{#if filterStatus || filterMember}
+					<p class="text-[0.875rem]">{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters</p>
+					<Button variant="outline" size="sm" onclick={() => { filterStatus = ''; filterMember = ''; }}>
+						Clear filters
+					</Button>
+				{:else}
+					<p class="text-[0.875rem]">No tasks found.</p>
+				{/if}
 			</div>
 		{:else}
 			<table class="w-full text-[0.875rem]">
@@ -130,7 +149,12 @@
 							<th class="px-4 py-3 text-left font-medium text-muted-foreground">Assignee</th>
 						{/if}
 						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Deadline</th>
+						<th
+							class="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+							onclick={() => (sortDeadline = sortDeadline === 'asc' ? 'desc' : sortDeadline === 'desc' ? null : 'asc')}
+						>
+							Deadline {sortDeadline === 'asc' ? '↑' : sortDeadline === 'desc' ? '↓' : '↕'}
+						</th>
 						<th class="px-4 py-3"></th>
 					</tr>
 				</thead>

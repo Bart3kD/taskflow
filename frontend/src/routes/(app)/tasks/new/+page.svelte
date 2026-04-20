@@ -1,10 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import { Textarea } from '$lib/components/ui/textarea';
 	import TaskForm from '$lib/components/TaskForm.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -42,5 +38,5 @@
 		</p>
 	{/if}
 
-	<TaskForm members={data.members} {loading} onsubmit={handleSubmit} />
+	<TaskForm members={data.members} currentUserId={data.user.id} {loading} onsubmit={handleSubmit} />
 </div>

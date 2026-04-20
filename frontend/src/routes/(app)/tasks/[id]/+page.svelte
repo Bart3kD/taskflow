@@ -69,6 +69,7 @@
 
 	<TaskForm
 		members={data.members.length ? data.members : [{ id: data.task.assignedTo, name: '—' }]}
+		currentUserId={data.user.id}
 		task={data.task}
 		{loading}
 		onsubmit={handleSubmit}
