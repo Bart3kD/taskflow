@@ -2,12 +2,13 @@
 	import type { PageData } from './$types';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Plus, AlertCircle, Play } from 'lucide-svelte';
+	import { Plus, AlertCircle, Play, Trash2 } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	let schedulerRunning = $state(false);
 	let schedulerResult = $state<'ok' | 'error' | null>(null);
+	let clearingLogs = $state(false);
 
 	async function runScheduler() {
 		schedulerRunning = true;
@@ -19,6 +20,15 @@
 			schedulerResult = 'error';
 		} finally {
 			schedulerRunning = false;
+		}
+	}
+
+	async function clearReminderLogs() {
+		clearingLogs = true;
+		try {
+			await fetch('/api/scheduler/logs', { method: 'DELETE' });
+		} finally {
+			clearingLogs = false;
 		}
 	}
 
@@ -86,6 +96,16 @@
 		<h1 class="text-[1.5rem] font-bold">Dashboard</h1>
 		{#if data.user.role === 'admin'}
 			<div class="flex items-center gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={clearReminderLogs}
+					disabled={clearingLogs}
+					class="gap-1.5"
+				>
+					<Trash2 class="size-3.5" />
+					{clearingLogs ? 'Clearing…' : 'Clear reminder logs'}
+				</Button>
 				<Button
 					variant="outline"
 					size="sm"

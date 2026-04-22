@@ -1,9 +1,17 @@
 import { db } from '$lib/db';
 import { tasks, users, notificationSchedules, notificationLogs } from '$lib/db/schema';
-import { eq, ne, and, gte, isNotNull } from 'drizzle-orm';
+import { eq, ne, and, gte } from 'drizzle-orm';
 import { computeNextDeadline, daysBetween } from './deadline';
 import { sendReminderEmail } from '$lib/notifications/email';
 import { sendReminderTelegram } from '$lib/notifications/telegram';
+
+type ReminderEntry = { taskId: string; title: string; daysUntil: number; deadlineDate: Date | null };
+
+type UserGroup = {
+	user: { id: string; email: string; name: string; telegramChatId: string | null };
+	channel: 'email' | 'telegram' | 'both';
+	reminders: ReminderEntry[];
+};
 
 function startOfToday(): Date {
 	const d = new Date();
@@ -13,7 +21,6 @@ function startOfToday(): Date {
 
 export async function processReminders(): Promise<void> {
 	const today = startOfToday();
-	const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 	const now = new Date();
 
 	const activeTasks = await db
@@ -26,6 +33,8 @@ export async function processReminders(): Promise<void> {
 		.innerJoin(users, eq(tasks.assignedTo, users.id))
 		.leftJoin(notificationSchedules, eq(notificationSchedules.userId, users.id))
 		.where(ne(tasks.status, 'done'));
+
+	const byUser = new Map<string, UserGroup>();
 
 	for (const { task, user, schedule } of activeTasks) {
 		if (!schedule) continue;
@@ -40,12 +49,14 @@ export async function processReminders(): Promise<void> {
 
 		if (!reminderDays.includes(daysUntil)) continue;
 
+		const reminderHour = parseInt(schedule.reportTime.split(':')[0], 10);
+		if (now.getHours() < reminderHour) continue;
+
 		const alreadySent = await db
 			.select({ id: notificationLogs.id })
 			.from(notificationLogs)
 			.where(
 				and(
-					eq(notificationLogs.userId, user.id),
 					eq(notificationLogs.taskId, task.id),
 					eq(notificationLogs.type, 'reminder'),
 					gte(notificationLogs.sentAt, today)
@@ -55,26 +66,24 @@ export async function processReminders(): Promise<void> {
 
 		if (alreadySent.length > 0) continue;
 
-		const channel = schedule.reminderChannel;
-
-		if (channel === 'email' || channel === 'both') {
-			await sendReminderEmail(user, task, daysUntil);
-			await db.insert(notificationLogs).values({
-				userId: user.id,
-				taskId: task.id,
-				type: 'reminder',
-				channel: 'email'
-			});
+		if (!byUser.has(user.id)) {
+			byUser.set(user.id, { user, channel: schedule.reminderChannel, reminders: [] });
 		}
+		byUser.get(user.id)!.reminders.push({ taskId: task.id, title: task.title, daysUntil, deadlineDate: task.deadlineDate });
+	}
 
-		if (channel === 'telegram' || channel === 'both') {
-			await sendReminderTelegram(user, task, daysUntil);
-			await db.insert(notificationLogs).values({
-				userId: user.id,
-				taskId: task.id,
-				type: 'reminder',
-				channel: 'telegram'
-			});
+	for (const { user, channel, reminders } of byUser.values()) {
+		if (channel === 'email' || channel === 'both') {
+			await sendReminderEmail(user, reminders);
+			for (const r of reminders) {
+				await db.insert(notificationLogs).values({ userId: user.id, taskId: r.taskId, type: 'reminder', channel: 'email' });
+			}
+		}
+		if ((channel === 'telegram' || channel === 'both') && user.telegramChatId) {
+			await sendReminderTelegram(user, reminders);
+			for (const r of reminders) {
+				await db.insert(notificationLogs).values({ userId: user.id, taskId: r.taskId, type: 'reminder', channel: 'telegram' });
+			}
 		}
 	}
 }

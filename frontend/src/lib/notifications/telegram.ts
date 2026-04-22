@@ -14,23 +14,31 @@ export async function sendMessage(chatId: string, text: string): Promise<void> {
 	});
 }
 
+function daysUntilLabel(days: number): string {
+	if (days === 0) return 'today';
+	if (days === 1) return 'tomorrow';
+	return `in ${days} days`;
+}
+
 export async function sendReminderTelegram(
 	user: Pick<User, 'telegramChatId' | 'name'>,
-	task: Pick<Task, 'title'>,
-	daysUntilDeadline: number
+	reminders: { title: string; daysUntil: number; deadlineDate: Date | null }[]
 ): Promise<void> {
 	if (!user.telegramChatId) return;
 
-	const when =
-		daysUntilDeadline === 0
-			? 'today'
-			: daysUntilDeadline === 1
-				? 'tomorrow'
-				: `in ${daysUntilDeadline} days`;
+	const lines = reminders
+		.map((r) => {
+			const time = r.deadlineDate
+				? new Date(r.deadlineDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+				: null;
+			const due = time ? `${daysUntilLabel(r.daysUntil)} at ${time}` : daysUntilLabel(r.daysUntil);
+			return `• <b>${r.title}</b> — due ${due}`;
+		})
+		.join('\n');
 
 	await sendMessage(
 		user.telegramChatId,
-		`⏰ <b>Task reminder</b>\n\nHi ${user.name}, your task <b>${task.title}</b> is due <b>${when}</b>.\n\nPlease make sure to complete it on time.`
+		`⏰ <b>Task reminders</b>\n\nHi ${user.name},\n\n${lines}\n\nPlease make sure to complete them on time.`
 	);
 }
 

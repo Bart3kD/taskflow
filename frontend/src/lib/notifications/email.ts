@@ -30,27 +30,44 @@ export async function sendWelcomeEmail(
 	});
 }
 
+function daysUntilLabel(days: number): string {
+	if (days === 0) return 'today';
+	if (days === 1) return 'tomorrow';
+	return `in ${days} days`;
+}
+
 export async function sendReminderEmail(
 	user: Pick<User, 'email' | 'name'>,
-	task: Pick<Task, 'title'>,
-	daysUntilDeadline: number
+	reminders: { title: string; daysUntil: number; deadlineDate: Date | null }[]
 ): Promise<void> {
 	const resend = getResend();
-	const when =
-		daysUntilDeadline === 0
-			? 'today'
-			: daysUntilDeadline === 1
-				? 'tomorrow'
-				: `in ${daysUntilDeadline} days`;
+	const subject =
+		reminders.length === 1
+			? `Reminder: "${reminders[0].title}" is due ${daysUntilLabel(reminders[0].daysUntil)}`
+			: `You have ${reminders.length} upcoming task deadlines`;
+
+	const rows = reminders
+		.map((r) => {
+			const time = r.deadlineDate
+				? new Date(r.deadlineDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+				: null;
+			const due = time ? `${daysUntilLabel(r.daysUntil)} at ${time}` : daysUntilLabel(r.daysUntil);
+			return `<tr>
+				<td style="padding:6px 12px 6px 0;font-weight:600;">${r.title}</td>
+				<td style="padding:6px 0;color:#6b7280;">Due ${due}</td>
+			</tr>`;
+		})
+		.join('');
 
 	await resend.emails.send({
 		from: FROM_EMAIL,
 		to: user.email,
-		subject: `Reminder: "${task.title}" is due ${when}`,
+		subject,
 		html: `
 			<p>Hi ${user.name},</p>
-			<p>This is a reminder that your task <strong>${task.title}</strong> is due <strong>${when}</strong>.</p>
-			<p>Please make sure to complete it on time.</p>
+			<p>Here are your upcoming task deadlines:</p>
+			<table style="border-collapse:collapse;margin:16px 0;">${rows}</table>
+			<p>Please make sure to complete them on time.</p>
 		`
 	});
 }
