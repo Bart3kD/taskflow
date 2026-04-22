@@ -57,6 +57,18 @@ export async function sendReportTelegram(
 	);
 }
 
+export async function sendDeletionTelegram(
+	user: Pick<User, 'telegramChatId' | 'name'>,
+	taskTitle: string
+): Promise<void> {
+	if (!user.telegramChatId) return;
+
+	await sendMessage(
+		user.telegramChatId,
+		`🗑 <b>Task removed</b>\n\nHi ${user.name}, your task <b>${taskTitle}</b> has been removed by the manager.`
+	);
+}
+
 export async function sendAssignmentTelegram(
 	user: Pick<User, 'telegramChatId' | 'name'>,
 	tasks: Pick<Task, 'title' | 'deadlineDate'>[],
@@ -67,10 +79,12 @@ export async function sendAssignmentTelegram(
 	const taskLines = tasks
 		.map((t) => {
 			const deadline = t.deadlineDate
-				? new Date(t.deadlineDate).toLocaleDateString('en-GB', {
+				? new Date(t.deadlineDate).toLocaleString('en-GB', {
 						day: '2-digit',
 						month: 'short',
-						year: 'numeric'
+						year: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
 					})
 				: 'no deadline';
 			return `• <b>${t.title}</b> — ${deadline}`;

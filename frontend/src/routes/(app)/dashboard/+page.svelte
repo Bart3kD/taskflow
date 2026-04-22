@@ -2,9 +2,25 @@
 	import type { PageData } from './$types';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Plus, AlertCircle } from 'lucide-svelte';
+	import { Plus, AlertCircle, Play } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	let schedulerRunning = $state(false);
+	let schedulerResult = $state<'ok' | 'error' | null>(null);
+
+	async function runScheduler() {
+		schedulerRunning = true;
+		schedulerResult = null;
+		try {
+			const res = await fetch('/api/scheduler', { method: 'POST' });
+			schedulerResult = res.ok ? 'ok' : 'error';
+		} catch {
+			schedulerResult = 'error';
+		} finally {
+			schedulerRunning = false;
+		}
+	}
 
 	let filterStatus = $state('');
 	let filterMember = $state('');
@@ -69,10 +85,22 @@
 	<div class="flex items-center justify-between">
 		<h1 class="text-[1.5rem] font-bold">Dashboard</h1>
 		{#if data.user.role === 'admin'}
-			<Button href="/tasks/new" class="gap-1.5">
-				<Plus class="size-4" />
-				New Task
-			</Button>
+			<div class="flex items-center gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					onclick={runScheduler}
+					disabled={schedulerRunning}
+					class="gap-1.5 {schedulerResult === 'ok' ? 'border-green-500 text-green-600' : schedulerResult === 'error' ? 'border-red-500 text-red-600' : ''}"
+				>
+					<Play class="size-3.5" />
+					{schedulerRunning ? 'Running…' : schedulerResult === 'ok' ? 'Done' : schedulerResult === 'error' ? 'Error' : 'Run scheduler'}
+				</Button>
+				<Button href="/tasks/new" class="gap-1.5">
+					<Plus class="size-4" />
+					New Task
+				</Button>
+			</div>
 		{/if}
 	</div>
 

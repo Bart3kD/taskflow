@@ -1,10 +1,12 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/db';
-import { tasks, statusTokens } from '$lib/db/schema';
+import { tasks, statusTokens, users, notificationSchedules } from '$lib/db/schema';
 import { requireAuth } from '$lib/auth/jwt';
 import { zUpdateTask } from '$lib/types';
 import { eq } from 'drizzle-orm';
+import { sendDeletionEmail } from '$lib/notifications/email';
+import { sendDeletionTelegram } from '$lib/notifications/telegram';
 import { addDays } from '$lib/utils';
 
 export const GET: RequestHandler = async (event) => {
@@ -50,10 +52,36 @@ export const DELETE: RequestHandler = async (event) => {
 	if (auth.role !== 'admin') throw error(403, 'Only managers can delete tasks');
 
 	const { id } = event.params;
-	await db.delete(statusTokens).where(eq(statusTokens.taskId, id));
-	const [deleted] = await db.delete(tasks).where(eq(tasks.id, id)).returning({ id: tasks.id });
 
-	if (!deleted) throw error(404, 'Task not found');
+	const [row] = await db
+		.select({
+			task: { title: tasks.title },
+			user: { id: users.id, email: users.email, name: users.name, telegramChatId: users.telegramChatId },
+			schedule: { reminderChannel: notificationSchedules.reminderChannel }
+		})
+		.from(tasks)
+		.innerJoin(users, eq(tasks.assignedTo, users.id))
+		.leftJoin(notificationSchedules, eq(notificationSchedules.userId, users.id))
+		.where(eq(tasks.id, id))
+		.limit(1);
+
+	if (!row) throw error(404, 'Task not found');
+
+	await db.delete(statusTokens).where(eq(statusTokens.taskId, id));
+	await db.delete(tasks).where(eq(tasks.id, id));
+
+	const channel = row.schedule?.reminderChannel ?? 'email';
+	if (channel === 'email' || channel === 'both') {
+		await sendDeletionEmail(row.user, row.task.title).catch((err) =>
+			console.error('sendDeletionEmail failed:', err)
+		);
+	}
+	if ((channel === 'telegram' || channel === 'both') && row.user.telegramChatId) {
+		await sendDeletionTelegram(row.user, row.task.title).catch((err) =>
+			console.error('sendDeletionTelegram failed:', err)
+		);
+	}
+
 	return json({ ok: true });
 };
 

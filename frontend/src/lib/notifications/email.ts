@@ -69,10 +69,12 @@ export async function sendAssignmentEmail(
 	const taskRows = tasks
 		.map((t) => {
 			const deadline = t.deadlineDate
-				? new Date(t.deadlineDate).toLocaleDateString('en-GB', {
+				? new Date(t.deadlineDate).toLocaleString('en-GB', {
 						day: '2-digit',
 						month: 'short',
-						year: 'numeric'
+						year: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
 					})
 				: 'No deadline';
 			return `<tr>
@@ -91,6 +93,23 @@ export async function sendAssignmentEmail(
 			<p>You have been assigned ${isSingle ? 'a new task' : 'new tasks'}:</p>
 			<table style="border-collapse:collapse;margin:16px 0;">${taskRows}</table>
 			<p><a href="${appUrl}/tasks" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">View your tasks</a></p>
+		`
+	});
+}
+
+export async function sendDeletionEmail(
+	user: Pick<User, 'email' | 'name'>,
+	taskTitle: string
+): Promise<void> {
+	const resend = getResend();
+
+	await resend.emails.send({
+		from: FROM_EMAIL,
+		to: user.email,
+		subject: `Task removed: "${taskTitle}"`,
+		html: `
+			<p>Hi ${user.name},</p>
+			<p>Your task <strong>${taskTitle}</strong> has been removed by the manager.</p>
 		`
 	});
 }
