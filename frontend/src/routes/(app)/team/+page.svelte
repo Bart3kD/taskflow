@@ -4,11 +4,20 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { Settings, Mail, MessageCircle, MessageCircleOff, UserPlus } from 'lucide-svelte';
+	import { Settings, Mail, MessageCircle, MessageCircleOff, UserPlus, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	const others = $derived(data.members.filter((m) => m.id !== data.currentUserId));
+	let search = $state('');
+
+	const others = $derived(
+		data.members
+			.filter((m) => m.id !== data.currentUserId)
+			.filter((m) => {
+				const q = search.toLowerCase();
+				return !q || m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
+			})
+	);
 
 	let dialogOpen = $state(false);
 	let addName = $state('');
@@ -54,8 +63,19 @@
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-center justify-between">
-		<h1 class="text-[1.5rem] font-bold">Team</h1>
+	<div class="flex items-start justify-between">
+		<div class="space-y-2">
+			<h1 class="text-[1.5rem] font-bold">Team</h1>
+			<div class="relative">
+				<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+				<input
+					bind:value={search}
+					placeholder="Search members…"
+					class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-48"
+				/>
+			</div>
+		</div>
+		<div class="flex items-center gap-3">
 		<Dialog.Root bind:open={dialogOpen}>
 			<Dialog.Trigger>
 				<Button class="gap-1.5">
@@ -101,6 +121,7 @@
 				</form>
 			</Dialog.Content>
 		</Dialog.Root>
+	</div>
 	</div>
 
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

@@ -1,9 +1,14 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { Button } from '$lib/components/ui/button';
-	import { Plus, AlertCircle } from 'lucide-svelte';
+	import * as Select from '$lib/components/ui/select';
+	import { Plus, AlertCircle, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	let search = $state('');
+	let filterStatus = $state('');
+	let filterMember = $state('');
 
 	const statusColors: Record<string, string> = {
 		pending: 'bg-muted text-muted-foreground',
@@ -20,6 +25,17 @@
 		overdue: 'Overdue',
 		problem: 'Problem'
 	};
+
+	const filtered = $derived(
+		data.tasks.filter((t) => {
+			if (filterStatus && t.status !== filterStatus) return false;
+			if (filterMember && t.assignedTo !== filterMember) return false;
+			if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+			return true;
+		})
+	);
+
+	const hasFilters = $derived(!!filterStatus || !!filterMember || !!search);
 
 	function formatDate(d: Date | null) {
 		if (!d) return '—';
@@ -41,13 +57,67 @@
 		{/if}
 	</div>
 
+	<!-- Filters -->
+	<div class="flex flex-wrap gap-3">
+		<div class="relative">
+			<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+			<input
+				bind:value={search}
+				placeholder="Search tasks…"
+				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-48"
+			/>
+		</div>
+
+		<Select.Root bind:value={filterStatus}>
+			<Select.Trigger>
+				<Select.Value label={filterStatus ? statusLabels[filterStatus] : ''} placeholder="All statuses" />
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="">All statuses</Select.Item>
+				{#each Object.entries(statusLabels) as [val, label]}
+					<Select.Item value={val}>{label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+
+		{#if data.user.role === 'admin' && data.members.length > 0}
+			<Select.Root bind:value={filterMember}>
+				<Select.Trigger>
+					<Select.Value label={data.members.find(m => m.id === filterMember)?.name ?? ''} placeholder="All members" />
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="">All members</Select.Item>
+					{#each data.members as m}
+						<Select.Item value={m.id}>{m.name}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		{/if}
+
+		{#if hasFilters}
+			<button
+				onclick={() => { filterStatus = ''; filterMember = ''; search = ''; }}
+				class="text-[0.875rem] text-muted-foreground hover:text-foreground underline"
+			>
+				Clear filters
+			</button>
+		{/if}
+	</div>
+
 	<div class="rounded-xl border border-border bg-card overflow-hidden">
-		{#if data.tasks.length === 0}
+		{#if filtered.length === 0}
 			<div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
 				<AlertCircle class="size-8" />
-				<p class="text-[0.875rem]">No tasks yet.</p>
-				{#if data.user.role === 'admin'}
-					<Button href="/tasks/new" variant="outline" class="mt-2">Create your first task</Button>
+				{#if hasFilters}
+					<p class="text-[0.875rem]">{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters</p>
+					<Button variant="outline" size="sm" onclick={() => { filterStatus = ''; filterMember = ''; search = ''; }}>
+						Clear filters
+					</Button>
+				{:else}
+					<p class="text-[0.875rem]">No tasks yet.</p>
+					{#if data.user.role === 'admin'}
+						<Button href="/tasks/new" variant="outline" class="mt-2">Create your first task</Button>
+					{/if}
 				{/if}
 			</div>
 		{:else}
@@ -65,7 +135,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each data.tasks as task}
+					{#each filtered as task}
 						<tr class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
 							<td class="px-4 py-3 font-medium">{task.title}</td>
 							{#if data.user.role === 'admin'}

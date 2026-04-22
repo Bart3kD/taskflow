@@ -2,7 +2,7 @@
 	import type { PageData } from './$types';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Plus, AlertCircle, Play, Trash2 } from 'lucide-svelte';
+	import { Plus, AlertCircle, Play, Trash2, Search } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select';
 
 	let { data }: { data: PageData } = $props();
@@ -33,9 +33,31 @@
 		}
 	}
 
+	let search = $state('');
 	let filterStatus = $state('');
 	let filterMember = $state('');
+	let filterPeriod = $state<'week' | 'month' | 'all'>('week');
 	let sortDeadline = $state<'asc' | 'desc' | null>(null);
+
+	function periodBounds(period: 'week' | 'month' | 'all'): { start: Date; end: Date } | null {
+		if (period === 'all') return null;
+		const now = new Date();
+		if (period === 'week') {
+			const day = now.getDay();
+			const monday = new Date(now);
+			monday.setDate(now.getDate() - ((day + 6) % 7));
+			monday.setHours(0, 0, 0, 0);
+			const sunday = new Date(monday);
+			sunday.setDate(monday.getDate() + 6);
+			sunday.setHours(23, 59, 59, 999);
+			return { start: monday, end: sunday };
+		}
+		const start = new Date(now.getFullYear(), now.getMonth(), 1);
+		const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+		return { start, end };
+	}
+
+	const periodLabels: Record<string, string> = { week: 'This week', month: 'This month', all: 'All' };
 
 	const statusColors: Record<string, string> = {
 		pending: 'bg-muted text-muted-foreground',
@@ -54,9 +76,16 @@
 	};
 
 	const filtered = $derived.by(() => {
+		const bounds = periodBounds(filterPeriod);
 		const result = data.tasks.filter((t) => {
 			if (filterStatus && t.status !== filterStatus) return false;
 			if (filterMember && t.assignedTo !== filterMember) return false;
+			if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+			if (bounds) {
+				if (!t.deadlineDate) return false;
+				const d = new Date(t.deadlineDate).getTime();
+				if (d < bounds.start.getTime() || d > bounds.end.getTime()) return false;
+			}
 			return true;
 		});
 		if (sortDeadline) {
@@ -143,6 +172,24 @@
 
 	<!-- Filters -->
 	<div class="flex flex-wrap gap-3">
+		<div class="relative">
+			<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+			<input
+				bind:value={search}
+				placeholder="Search tasks…"
+				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-48"
+			/>
+		</div>
+		<Select.Root bind:value={filterPeriod}>
+			<Select.Trigger>
+				<Select.Value label={periodLabels[filterPeriod]} />
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="week">This week</Select.Item>
+				<Select.Item value="month">This month</Select.Item>
+				<Select.Item value="all">All</Select.Item>
+			</Select.Content>
+		</Select.Root>
 		<Select.Root bind:value={filterStatus}>
 			<Select.Trigger>
 				<Select.Value label={filterStatus ? statusLabels[filterStatus] : ''} placeholder="All statuses" />
@@ -169,9 +216,9 @@
 			</Select.Root>
 		{/if}
 
-		{#if filterStatus || filterMember}
+		{#if filterStatus || filterMember || search || filterPeriod !== 'week'}
 			<button
-				onclick={() => { filterStatus = ''; filterMember = ''; }}
+				onclick={() => { filterStatus = ''; filterMember = ''; search = ''; filterPeriod = 'week'; }}
 				class="text-[0.875rem] text-muted-foreground hover:text-foreground underline"
 			>
 				Clear filters
@@ -184,9 +231,9 @@
 		{#if filtered.length === 0}
 			<div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
 				<AlertCircle class="size-8" />
-				{#if filterStatus || filterMember}
+				{#if filterStatus || filterMember || search || filterPeriod !== 'all'}
 					<p class="text-[0.875rem]">{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters</p>
-					<Button variant="outline" size="sm" onclick={() => { filterStatus = ''; filterMember = ''; }}>
+					<Button variant="outline" size="sm" onclick={() => { filterStatus = ''; filterMember = ''; search = ''; filterPeriod = 'week'; }}>
 						Clear filters
 					</Button>
 				{:else}
