@@ -3,6 +3,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Plus, AlertCircle, Play, Trash2 } from 'lucide-svelte';
+	import * as Select from '$lib/components/ui/select';
 
 	let { data }: { data: PageData } = $props();
 
@@ -142,26 +143,30 @@
 
 	<!-- Filters -->
 	<div class="flex flex-wrap gap-3">
-		<select
-			bind:value={filterStatus}
-			class="rounded-md border border-border bg-background px-3 py-1.5 text-[0.875rem] text-foreground"
-		>
-			<option value="">All statuses</option>
-			{#each Object.entries(statusLabels) as [val, label]}
-				<option value={val}>{label}</option>
-			{/each}
-		</select>
+		<Select.Root bind:value={filterStatus}>
+			<Select.Trigger>
+				<Select.Value label={filterStatus ? statusLabels[filterStatus] : ''} placeholder="All statuses" />
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="">All statuses</Select.Item>
+				{#each Object.entries(statusLabels) as [val, label]}
+					<Select.Item value={val}>{label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 
 		{#if data.user.role === 'admin' && data.members.length > 0}
-			<select
-				bind:value={filterMember}
-				class="rounded-md border border-border bg-background px-3 py-1.5 text-[0.875rem] text-foreground"
-			>
-				<option value="">All members</option>
-				{#each data.members as m}
-					<option value={m.id}>{m.name}</option>
-				{/each}
-			</select>
+			<Select.Root bind:value={filterMember}>
+				<Select.Trigger>
+					<Select.Value label={data.members.find(m => m.id === filterMember)?.name ?? ''} placeholder="All members" />
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="">All members</Select.Item>
+					{#each data.members as m}
+						<Select.Item value={m.id}>{m.name}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
 		{/if}
 
 		{#if filterStatus || filterMember}

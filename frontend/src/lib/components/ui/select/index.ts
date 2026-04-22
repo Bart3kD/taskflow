@@ -1,4 +1,5 @@
 import Root from "./select.svelte";
+import Value from "./select-value.svelte";
 import Group from "./select-group.svelte";
 import Label from "./select-label.svelte";
 import Item from "./select-item.svelte";
@@ -22,8 +23,10 @@ export {
 	ScrollUpButton,
 	GroupHeading,
 	Portal,
+	Value,
 	//
 	Root as Select,
+	Value as SelectValue,
 	Group as SelectGroup,
 	Label as SelectLabel,
 	Item as SelectItem,

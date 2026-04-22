@@ -5,6 +5,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
+	import * as Select from '$lib/components/ui/select';
 	import { untrack } from 'svelte';
 	import type { Task } from '$lib/db/schema';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -33,7 +34,7 @@
 	// Recurrence config
 	let rcN = $state(untrack(() => task?.recurrenceConfig?.n ?? 7));
 	let rcDayOfMonth = $state(untrack(() => task?.recurrenceConfig?.dayOfMonth ?? 1));
-	let rcDayOfWeek = $state(untrack(() => task?.recurrenceConfig?.dayOfWeek ?? 1));
+	let rcDayOfWeek = $state(String(untrack(() => task?.recurrenceConfig?.dayOfWeek ?? 1)));
 	const initialHour = untrack(() => task?.recurrenceConfig?.hour ?? 9);
 	let rcTime = $state(initialHour.toString().padStart(2, '0') + ':00');
 
@@ -75,7 +76,7 @@
 			base.recurrenceType = recurrenceType;
 			if (recurrenceType === 'every_n_days') base.recurrenceConfig = { n: rcN, hour: rcHour() };
 			else if (recurrenceType === 'day_of_month') base.recurrenceConfig = { dayOfMonth: rcDayOfMonth, hour: rcHour() };
-			else if (recurrenceType === 'day_of_week') base.recurrenceConfig = { dayOfWeek: rcDayOfWeek, hour: rcHour() };
+			else if (recurrenceType === 'day_of_week') base.recurrenceConfig = { dayOfWeek: parseInt(rcDayOfWeek), hour: rcHour() };
 			else base.recurrenceConfig = { hour: rcHour() };
 			if (overallDeadlineDate) base.deadlineDate = new Date(overallDeadlineDate).toISOString();
 		}
@@ -137,17 +138,18 @@
 	{#if task}
 		<div class="space-y-1.5">
 			<Label for="status">Status</Label>
-			<select
-				id="status"
-				bind:value={status}
-				class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem] text-foreground"
-			>
-				<option value="pending">Pending</option>
-				<option value="in_progress">In Progress</option>
-				<option value="done">Done</option>
-				<option value="overdue">Overdue</option>
-				<option value="problem">Problem</option>
-			</select>
+			<Select.Root bind:value={status}>
+				<Select.Trigger class="w-full">
+					<Select.Value label={{ pending: 'Pending', in_progress: 'In Progress', done: 'Done', overdue: 'Overdue', problem: 'Problem' }[status]} />
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="pending">Pending</Select.Item>
+					<Select.Item value="in_progress">In Progress</Select.Item>
+					<Select.Item value="done">Done</Select.Item>
+					<Select.Item value="overdue">Overdue</Select.Item>
+					<Select.Item value="problem">Problem</Select.Item>
+				</Select.Content>
+			</Select.Root>
 		</div>
 	{/if}
 
@@ -178,17 +180,18 @@
 	{:else}
 		<div class="space-y-1.5">
 			<Label for="rectype">Recurrence type</Label>
-			<select
-				id="rectype"
-				bind:value={recurrenceType}
-				class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem] text-foreground"
-			>
-				<option value="every_n_days">Every N days</option>
-				<option value="day_of_month">Day of month</option>
-				<option value="day_of_week">Day of week</option>
-				<option value="first_day_of_month">First day of month</option>
-				<option value="last_day_of_month">Last day of month</option>
-			</select>
+			<Select.Root bind:value={recurrenceType}>
+				<Select.Trigger class="w-full">
+					<Select.Value label={{ every_n_days: 'Every N days', day_of_month: 'Day of month', day_of_week: 'Day of week', first_day_of_month: 'First day of month', last_day_of_month: 'Last day of month' }[recurrenceType]} />
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="every_n_days">Every N days</Select.Item>
+					<Select.Item value="day_of_month">Day of month</Select.Item>
+					<Select.Item value="day_of_week">Day of week</Select.Item>
+					<Select.Item value="first_day_of_month">First day of month</Select.Item>
+					<Select.Item value="last_day_of_month">Last day of month</Select.Item>
+				</Select.Content>
+			</Select.Root>
 		</div>
 
 		{#if recurrenceType === 'every_n_days'}
@@ -217,15 +220,16 @@
 			<div class="grid grid-cols-2 gap-4">
 				<div class="space-y-1.5">
 					<Label for="rcDow">Day of week</Label>
-					<select
-						id="rcDow"
-						bind:value={rcDayOfWeek}
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem] text-foreground"
-					>
-						{#each weekdays as day}
-							<option value={day.value}>{day.label}</option>
-						{/each}
-					</select>
+					<Select.Root bind:value={rcDayOfWeek}>
+						<Select.Trigger class="w-full">
+							<Select.Value label={weekdays.find(d => String(d.value) === rcDayOfWeek)?.label} />
+						</Select.Trigger>
+						<Select.Content>
+							{#each weekdays as day}
+								<Select.Item value={String(day.value)}>{day.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
 				</div>
 				<div class="space-y-1.5">
 					<Label for="rcTime2">Time of day</Label>

@@ -21,5 +21,5 @@ export const load: PageServerLoad = async ({ parent }) => {
 		.from(users)
 		.leftJoin(notificationSchedules, eq(users.id, notificationSchedules.userId));
 
-	return { members: rows };
+	return { members: rows, currentUserId: user.id };
 };

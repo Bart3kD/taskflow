@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import * as Select from '$lib/components/ui/select';
 
 	import { untrack } from 'svelte';
 
@@ -51,7 +52,7 @@
 	// Schedule fields
 	let reportFrequency = $state(untrack(() => data.schedule?.reportFrequency ?? 'every_n_days'));
 	let reportEveryNDays = $state(untrack(() => data.schedule?.reportEveryNDays ?? 7));
-	let reportDayOfWeek = $state(untrack(() => data.schedule?.reportDayOfWeek ?? 1));
+	let reportDayOfWeek = $state(String(untrack(() => data.schedule?.reportDayOfWeek ?? 1)));
 	let reportTime = $state(untrack(() => data.schedule?.reportTime ?? '09:00'));
 	let reportChannel = $state(untrack(() => data.schedule?.reportChannel ?? 'email'));
 	let reminderChannel = $state(untrack(() => data.schedule?.reminderChannel ?? 'email'));
@@ -91,7 +92,7 @@
 			body: JSON.stringify({
 				reportFrequency,
 				reportEveryNDays: reportFrequency === 'every_n_days' ? reportEveryNDays : undefined,
-				reportDayOfWeek: reportFrequency === 'weekly' ? reportDayOfWeek : undefined,
+				reportDayOfWeek: reportFrequency === 'weekly' ? parseInt(reportDayOfWeek) : undefined,
 				reportTime,
 				reportChannel,
 				reminderChannel,
@@ -176,14 +177,15 @@
 		<form onsubmit={saveSchedule} class="space-y-4">
 			<div class="space-y-1.5">
 				<Label for="repFreq">Report frequency</Label>
-				<select
-					id="repFreq"
-					bind:value={reportFrequency}
-					class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem]"
-				>
-					<option value="every_n_days">Every N days (configured per report send)</option>
-					<option value="weekly">Weekly</option>
-				</select>
+				<Select.Root bind:value={reportFrequency}>
+					<Select.Trigger class="w-full">
+						<Select.Value label={reportFrequency === 'weekly' ? 'Weekly' : 'Every N days (configured per report send)'} />
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="every_n_days">Every N days (configured per report send)</Select.Item>
+						<Select.Item value="weekly">Weekly</Select.Item>
+					</Select.Content>
+				</Select.Root>
 			</div>
 
 			{#if reportFrequency === 'every_n_days'}
@@ -196,15 +198,16 @@
 			{#if reportFrequency === 'weekly'}
 				<div class="space-y-1.5">
 					<Label for="repDow">Day of week</Label>
-					<select
-						id="repDow"
-						bind:value={reportDayOfWeek}
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem]"
-					>
-						{#each weekdays as day, i}
-							<option value={i}>{day}</option>
-						{/each}
-					</select>
+					<Select.Root bind:value={reportDayOfWeek}>
+						<Select.Trigger class="w-full">
+							<Select.Value label={weekdays[parseInt(reportDayOfWeek)]} />
+						</Select.Trigger>
+						<Select.Content>
+							{#each weekdays as day, i}
+								<Select.Item value={String(i)}>{day}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
 				</div>
 			{/if}
 
@@ -216,28 +219,30 @@
 			<div class="grid grid-cols-2 gap-4">
 				<div class="space-y-1.5">
 					<Label for="repChannel">Report channel</Label>
-					<select
-						id="repChannel"
-						bind:value={reportChannel}
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem]"
-					>
-						<option value="email">Email</option>
-						<option value="telegram">Telegram</option>
-						<option value="both">Both</option>
-					</select>
+					<Select.Root bind:value={reportChannel}>
+						<Select.Trigger class="w-full">
+							<Select.Value label={{ email: 'Email', telegram: 'Telegram', both: 'Both' }[reportChannel]} />
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="email">Email</Select.Item>
+							<Select.Item value="telegram">Telegram</Select.Item>
+							<Select.Item value="both">Both</Select.Item>
+						</Select.Content>
+					</Select.Root>
 				</div>
 
 				<div class="space-y-1.5">
 					<Label for="remChannel">Reminder channel</Label>
-					<select
-						id="remChannel"
-						bind:value={reminderChannel}
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-[0.875rem]"
-					>
-						<option value="email">Email</option>
-						<option value="telegram">Telegram</option>
-						<option value="both">Both</option>
-					</select>
+					<Select.Root bind:value={reminderChannel}>
+						<Select.Trigger class="w-full">
+							<Select.Value label={{ email: 'Email', telegram: 'Telegram', both: 'Both' }[reminderChannel]} />
+						</Select.Trigger>
+						<Select.Content>
+							<Select.Item value="email">Email</Select.Item>
+							<Select.Item value="telegram">Telegram</Select.Item>
+							<Select.Item value="both">Both</Select.Item>
+						</Select.Content>
+					</Select.Root>
 				</div>
 			</div>
 
