@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Plus, AlertCircle, Play, Trash2, Search } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select';
+	import FacetedFilter from '$lib/components/FacetedFilter.svelte';
+	import { Plus, AlertCircle, Play, Trash2, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -34,8 +34,8 @@
 	}
 
 	let search = $state('');
-	let filterStatus = $state('');
-	let filterMember = $state('');
+	let filterStatus = $state<string[]>([]);
+	let filterMember = $state<string[]>([]);
 	let filterPeriod = $state<'week' | 'month' | 'all'>('week');
 	let sortDeadline = $state<'asc' | 'desc' | null>(null);
 
@@ -75,11 +75,15 @@
 		problem: 'Problem'
 	};
 
+	const statusOptions = Object.entries(statusLabels).map(([value, label]) => ({ value, label }));
+
+	const memberOptions = $derived(data.members.map((m) => ({ value: m.id, label: m.name })));
+
 	const filtered = $derived.by(() => {
 		const bounds = periodBounds(filterPeriod);
 		const result = data.tasks.filter((t) => {
-			if (filterStatus && t.status !== filterStatus) return false;
-			if (filterMember && t.assignedTo !== filterMember) return false;
+			if (filterStatus.length && !filterStatus.includes(t.status)) return false;
+			if (filterMember.length && !filterMember.includes(t.assignedTo)) return false;
 			if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
 			if (bounds) {
 				if (!t.deadlineDate) return false;
@@ -105,6 +109,17 @@
 		}
 		return c;
 	});
+
+	const hasFilters = $derived(
+		filterStatus.length > 0 || filterMember.length > 0 || !!search || filterPeriod !== 'week'
+	);
+
+	function clearFilters() {
+		filterStatus = [];
+		filterMember = [];
+		search = '';
+		filterPeriod = 'week';
+	}
 
 	function formatDate(d: Date | null) {
 		if (!d) return '—';
@@ -158,9 +173,13 @@
 	<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 		{#each Object.entries(counts) as [status, count]}
 			<button
-				onclick={() => (filterStatus = filterStatus === status ? '' : status)}
+				onclick={() => {
+					filterStatus = filterStatus.includes(status)
+						? filterStatus.filter((s) => s !== status)
+						: [...filterStatus, status];
+				}}
 				class="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent
-					{filterStatus === status ? 'ring-2 ring-ring' : ''}"
+					{filterStatus.includes(status) ? 'ring-2 ring-ring' : ''}"
 			>
 				<p class="text-[0.75rem] font-medium text-muted-foreground uppercase tracking-wide">
 					{statusLabels[status]}
@@ -171,7 +190,7 @@
 	</div>
 
 	<!-- Filters -->
-	<div class="flex flex-wrap gap-3">
+	<div class="flex flex-wrap items-center gap-3">
 		<div class="relative">
 			<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
 			<input
@@ -180,6 +199,7 @@
 				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-48"
 			/>
 		</div>
+
 		<Select.Root bind:value={filterPeriod}>
 			<Select.Trigger>
 				<Select.Value label={periodLabels[filterPeriod]} />
@@ -190,35 +210,16 @@
 				<Select.Item value="all">All</Select.Item>
 			</Select.Content>
 		</Select.Root>
-		<Select.Root bind:value={filterStatus}>
-			<Select.Trigger>
-				<Select.Value label={filterStatus ? statusLabels[filterStatus] : ''} placeholder="All statuses" />
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="">All statuses</Select.Item>
-				{#each Object.entries(statusLabels) as [val, label]}
-					<Select.Item value={val}>{label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
+
+		<FacetedFilter label="Status" options={statusOptions} bind:selected={filterStatus} />
 
 		{#if data.user.role === 'admin' && data.members.length > 0}
-			<Select.Root bind:value={filterMember}>
-				<Select.Trigger>
-					<Select.Value label={data.members.find(m => m.id === filterMember)?.name ?? ''} placeholder="All members" />
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">All members</Select.Item>
-					{#each data.members as m}
-						<Select.Item value={m.id}>{m.name}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+			<FacetedFilter label="Member" options={memberOptions} bind:selected={filterMember} />
 		{/if}
 
-		{#if filterStatus || filterMember || search || filterPeriod !== 'week'}
+		{#if hasFilters}
 			<button
-				onclick={() => { filterStatus = ''; filterMember = ''; search = ''; filterPeriod = 'week'; }}
+				onclick={clearFilters}
 				class="text-[0.875rem] text-muted-foreground hover:text-foreground underline"
 			>
 				Clear filters
@@ -231,9 +232,9 @@
 		{#if filtered.length === 0}
 			<div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
 				<AlertCircle class="size-8" />
-				{#if filterStatus || filterMember || search || filterPeriod !== 'all'}
+				{#if hasFilters}
 					<p class="text-[0.875rem]">{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters</p>
-					<Button variant="outline" size="sm" onclick={() => { filterStatus = ''; filterMember = ''; search = ''; filterPeriod = 'week'; }}>
+					<Button variant="outline" size="sm" onclick={clearFilters}>
 						Clear filters
 					</Button>
 				{:else}
