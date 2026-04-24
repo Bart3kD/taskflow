@@ -8,10 +8,14 @@ import { TELEGRAM_BOT_USERNAME } from '$env/static/private';
 
 export const POST: RequestHandler = async (event) => {
 	const auth = await requireAuth(event);
-	if (auth.role !== 'admin') throw error(403, 'Forbidden');
 
-	const { userId } = await event.request.json();
-	if (!userId) throw error(400, 'userId required');
+	let targetUserId: string;
+	if (auth.role === 'admin') {
+		const body = await event.request.json().catch(() => ({}));
+		targetUserId = body.userId ?? auth.userId;
+	} else {
+		targetUserId = auth.userId;
+	}
 
 	const token = crypto.randomUUID();
 	const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -19,7 +23,7 @@ export const POST: RequestHandler = async (event) => {
 	await db
 		.update(users)
 		.set({ telegramLinkToken: token, telegramLinkExpiresAt: expiresAt })
-		.where(eq(users.id, userId));
+		.where(eq(users.id, targetUserId));
 
 	return json({ url: `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${token}` });
 };

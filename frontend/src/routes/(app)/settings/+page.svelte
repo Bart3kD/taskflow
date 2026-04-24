@@ -9,10 +9,34 @@
 	let { data }: { data: PageData } = $props();
 
 	// Telegram
-	let telegramChatId = $state(untrack(() => data.user.telegramChatId ?? ''));
-	let telegramLoading = $state(false);
-	let telegramError = $state('');
-	let telegramSuccess = $state(false);
+	let telegramLinkUrl = $state('');
+	let telegramLinkLoading = $state(false);
+	let telegramLinkCopied = $state(false);
+
+	async function generateTelegramLink() {
+		telegramLinkLoading = true;
+		const res = await fetch('/api/telegram/link', { method: 'POST' });
+		telegramLinkLoading = false;
+		if (res.ok) {
+			const { url } = await res.json();
+			telegramLinkUrl = url;
+		}
+	}
+
+	async function disconnectTelegram() {
+		await fetch(`/api/users/${data.user.id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ telegramChatId: null })
+		});
+		await invalidateAll();
+	}
+
+	function copyLink() {
+		navigator.clipboard.writeText(telegramLinkUrl);
+		telegramLinkCopied = true;
+		setTimeout(() => (telegramLinkCopied = false), 2000);
+	}
 
 	// Password
 	let currentPassword = $state('');
@@ -21,27 +45,6 @@
 	let passwordLoading = $state(false);
 	let passwordError = $state('');
 	let passwordSuccess = $state(false);
-
-	async function saveTelegram(e: SubmitEvent) {
-		e.preventDefault();
-		telegramLoading = true;
-		telegramError = '';
-		telegramSuccess = false;
-
-		const res = await fetch(`/api/users/${data.user.id}`, {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ telegramChatId: telegramChatId || null })
-		});
-
-		telegramLoading = false;
-		if (res.ok) {
-			telegramSuccess = true;
-			await invalidateAll();
-		} else {
-			telegramError = 'Failed to save.';
-		}
-	}
 
 	async function changePassword(e: SubmitEvent) {
 		e.preventDefault();
@@ -84,24 +87,37 @@
 			<p class="text-[0.875rem] text-muted-foreground mt-0.5">{data.user.name} — {data.user.email}</p>
 		</div>
 
-		<form onsubmit={saveTelegram} class="space-y-4">
-			<div class="space-y-1.5">
-				<Label for="telegram">Telegram Chat ID</Label>
-				<Input id="telegram" bind:value={telegramChatId} placeholder="Optional" />
-				<p class="text-[0.75rem] text-muted-foreground">Used to receive notifications via Telegram.</p>
+		<div class="flex items-center justify-between">
+			<div>
+				<p class="text-[0.875rem] font-medium">Telegram</p>
+				{#if data.user.telegramChatId}
+					<p class="text-[0.75rem] text-green-600 dark:text-green-400">✓ Connected</p>
+				{:else}
+					<p class="text-[0.75rem] text-muted-foreground">Not connected</p>
+				{/if}
 			</div>
-
-			{#if telegramError}
-				<p class="text-[0.875rem] text-destructive">{telegramError}</p>
+			{#if data.user.telegramChatId}
+				<Button variant="outline" onclick={disconnectTelegram}>Disconnect</Button>
+			{:else}
+				<Button variant="outline" onclick={generateTelegramLink} disabled={telegramLinkLoading}>
+					{telegramLinkLoading ? 'Generating…' : 'Generate connect link'}
+				</Button>
 			{/if}
-			{#if telegramSuccess}
-				<p class="text-[0.875rem] text-green-600">Saved.</p>
-			{/if}
+		</div>
 
-			<Button type="submit" disabled={telegramLoading}>
-				{telegramLoading ? 'Saving…' : 'Save'}
-			</Button>
-		</form>
+		{#if telegramLinkUrl}
+			<div class="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+				<p class="text-[0.75rem] text-muted-foreground">
+					Click the link below to open the Telegram bot and connect your account automatically. Link expires in 24h.
+				</p>
+				<div class="flex items-center gap-2">
+					<code class="flex-1 truncate text-[0.75rem]">{telegramLinkUrl}</code>
+					<Button variant="outline" size="sm" onclick={copyLink}>
+						{telegramLinkCopied ? 'Copied!' : 'Copy'}
+					</Button>
+				</div>
+			</div>
+		{/if}
 	</section>
 
 	<section class="rounded-xl border border-border bg-card p-6 space-y-5">
