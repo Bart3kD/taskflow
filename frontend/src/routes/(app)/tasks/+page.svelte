@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import FacetedFilter from '$lib/components/FacetedFilter.svelte';
+	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
 	import { Plus, AlertCircle, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -9,28 +10,54 @@
 	let search = $state('');
 	let filterStatus = $state<string[]>([]);
 	let filterMember = $state<string[]>([]);
+	let filterScope = $state<'all' | 'mine' | 'team'>('all');
 
-	const statusColors: Record<string, string> = {
-		pending: 'bg-muted text-muted-foreground',
-		in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-		done: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-		overdue: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-		problem: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+	const scopeOptions: Array<{ value: 'all' | 'mine' | 'team'; label: string }> = [
+		{ value: 'all', label: 'All tasks' },
+		{ value: 'mine', label: 'My tasks' },
+		{ value: 'team', label: "Team's tasks" }
+	];
+
+	const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
+		pending: {
+			label: 'Pending',
+			dot: 'bg-muted-foreground/50',
+			badge: 'bg-muted text-muted-foreground'
+		},
+		in_progress: {
+			label: 'In Progress',
+			dot: 'bg-[var(--color-status-blue)]',
+			badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+		},
+		done: {
+			label: 'Done',
+			dot: 'bg-[var(--color-status-green)]',
+			badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+		},
+		overdue: {
+			label: 'Overdue',
+			dot: 'bg-[var(--color-status-red)]',
+			badge: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+		},
+		problem: {
+			label: 'Problem',
+			dot: 'bg-[var(--color-status-yellow)]',
+			badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+		}
 	};
 
-	const statusLabels: Record<string, string> = {
-		pending: 'Pending',
-		in_progress: 'In Progress',
-		done: 'Done',
-		overdue: 'Overdue',
-		problem: 'Problem'
+	const deadlineTypeLabels: Record<string, string> = {
+		once: 'Once',
+		recurring: 'Recurring'
 	};
 
-	const statusOptions = Object.entries(statusLabels).map(([value, label]) => ({ value, label }));
+	const statusOptions = Object.entries(statusConfig).map(([value, { label }]) => ({ value, label }));
 	const memberOptions = $derived(data.members.map((m) => ({ value: m.id, label: m.name })));
 
 	const filtered = $derived(
 		data.tasks.filter((t) => {
+			if (filterScope === 'mine' && t.assignedTo !== data.user.id) return false;
+			if (filterScope === 'team' && t.assignedTo === data.user.id) return false;
 			if (filterStatus.length && !filterStatus.includes(t.status)) return false;
 			if (filterMember.length && !filterMember.includes(t.assignedTo)) return false;
 			if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -53,27 +80,45 @@
 		const time = dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 		return `${date}, ${time}`;
 	}
+
+	function isOverdue(t: (typeof data.tasks)[0]) {
+		if (t.status === 'done') return false;
+		if (!t.deadlineDate) return false;
+		return new Date(t.deadlineDate) < new Date();
+	}
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-center justify-between">
-		<h1 class="text-[1.5rem] font-bold">Tasks</h1>
+	<!-- Header -->
+	<div class="flex items-start justify-between gap-4">
+		<div>
+			<h1 class="text-[1.75rem] font-bold leading-tight">Tasks</h1>
+			<p class="text-[0.875rem] text-muted-foreground mt-0.5">
+				{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} total
+			</p>
+		</div>
 		{#if data.user.role === 'admin'}
-			<Button href="/tasks/new" class="gap-1.5">
+			<Button href="/tasks/new" class="gap-1.5 shrink-0">
 				<Plus class="size-4" />
-				New Task
+				New task
 			</Button>
 		{/if}
 	</div>
 
 	<!-- Filters -->
-	<div class="flex flex-wrap items-center gap-3">
+	<div class="flex flex-wrap items-center gap-2">
+		{#if data.user.role === 'admin'}
+			<SegmentedControl options={scopeOptions} bind:value={filterScope} />
+		{/if}
+
 		<div class="relative">
-			<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+			<Search
+				class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none"
+			/>
 			<input
 				bind:value={search}
 				placeholder="Search tasks…"
-				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-48"
+				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-44"
 			/>
 		</div>
 
@@ -86,57 +131,100 @@
 		{#if hasFilters}
 			<button
 				onclick={clearFilters}
-				class="text-[0.875rem] text-muted-foreground hover:text-foreground underline"
+				class="text-[0.8125rem] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
 			>
 				Clear filters
 			</button>
 		{/if}
 	</div>
 
+	<!-- Task table -->
 	<div class="rounded-xl border border-border bg-card overflow-hidden">
 		{#if filtered.length === 0}
-			<div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-				<AlertCircle class="size-8" />
+			<div class="flex flex-col items-center gap-3 py-20 text-muted-foreground">
+				<AlertCircle class="size-7 opacity-40" />
 				{#if hasFilters}
-					<p class="text-[0.875rem]">{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters</p>
+					<p class="text-[0.875rem]">
+						{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters
+					</p>
 					<Button variant="outline" size="sm" onclick={clearFilters}>Clear filters</Button>
 				{:else}
 					<p class="text-[0.875rem]">No tasks yet.</p>
 					{#if data.user.role === 'admin'}
-						<Button href="/tasks/new" variant="outline" class="mt-2">Create your first task</Button>
+						<Button href="/tasks/new" size="sm" class="gap-1.5">
+							<Plus class="size-3.5" />
+							Create first task
+						</Button>
 					{/if}
 				{/if}
 			</div>
 		{:else}
 			<table class="w-full text-[0.875rem]">
 				<thead>
-					<tr class="border-b border-border bg-muted/40">
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Title</th>
+					<tr class="border-b border-border bg-muted/30">
+						<th
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+							>Title</th
+						>
 						{#if data.user.role === 'admin'}
-							<th class="px-4 py-3 text-left font-medium text-muted-foreground">Assignee</th>
+							<th
+								class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+								>Assignee</th
+							>
 						{/if}
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Deadline</th>
+						<th
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+							>Type</th
+						>
+						<th
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+							>Status</th
+						>
+						<th
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+							>Deadline</th
+						>
 						<th class="px-4 py-3"></th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each filtered as task}
-						<tr class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-							<td class="px-4 py-3 font-medium">{task.title}</td>
+						<tr
+							class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors
+								{isOverdue(task) ? 'bg-destructive/5 dark:bg-destructive/10' : ''}"
+						>
+							<td class="px-4 py-3 font-medium">
+								<div class="flex items-center gap-2">
+									{#if isOverdue(task)}
+										<span class="size-1.5 rounded-full bg-destructive shrink-0"></span>
+									{/if}
+									{task.title}
+								</div>
+							</td>
 							{#if data.user.role === 'admin'}
 								<td class="px-4 py-3 text-muted-foreground">{task.assigneeName ?? '—'}</td>
 							{/if}
-							<td class="px-4 py-3 text-muted-foreground capitalize">{task.deadlineType}</td>
+							<td class="px-4 py-3 text-muted-foreground">
+								{deadlineTypeLabels[task.deadlineType] ?? task.deadlineType}
+							</td>
 							<td class="px-4 py-3">
-								<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-medium {statusColors[task.status]}">
-									{statusLabels[task.status]}
+								<span
+									class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-medium {statusConfig[
+										task.status
+									]?.badge ?? 'bg-muted text-muted-foreground'}"
+								>
+									{statusConfig[task.status]?.label ?? task.status}
 								</span>
 							</td>
-							<td class="px-4 py-3 text-muted-foreground">{formatDate(task.deadlineDate)}</td>
+							<td class="px-4 py-3 text-muted-foreground tabular-nums"
+								>{formatDate(task.deadlineDate)}</td
+							>
 							<td class="px-4 py-3 text-right">
-								<a href="/tasks/{task.id}" class="text-[0.875rem] text-primary hover:underline">Edit</a>
+								<a
+									href="/tasks/{task.id}"
+									class="text-[0.8125rem] font-medium text-primary hover:text-primary/70 transition-colors"
+									>Edit</a
+								>
 							</td>
 						</tr>
 					{/each}
@@ -144,4 +232,10 @@
 			</table>
 		{/if}
 	</div>
+
+	{#if filtered.length > 0}
+		<p class="text-[0.75rem] text-muted-foreground text-right">
+			Showing {filtered.length} of {data.tasks.length} task{data.tasks.length === 1 ? '' : 's'}
+		</p>
+	{/if}
 </div>

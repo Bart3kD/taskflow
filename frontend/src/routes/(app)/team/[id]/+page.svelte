@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
 	import { untrack } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -301,18 +302,7 @@
 						Report frequency
 					</p>
 					<div class="space-y-2.5">
-						<div class="inline-flex rounded-lg border border-border p-0.5 bg-muted/30 gap-0.5">
-							{#each frequencyOptions as opt}
-								<button
-									type="button"
-									class="px-3 py-1.5 rounded-md text-[0.8125rem] font-medium transition-all
-										{reportFrequency === opt.value
-										? 'bg-background shadow-sm text-foreground'
-										: 'text-muted-foreground hover:text-foreground'}"
-									onclick={() => (reportFrequency = opt.value)}
-								>{opt.label}</button>
-							{/each}
-						</div>
+						<SegmentedControl options={frequencyOptions} bind:value={reportFrequency} />
 
 						{#if reportFrequency === 'every_n_days'}
 							<div class="flex items-center gap-3">
@@ -359,34 +349,12 @@
 					<div class="space-y-3">
 						<div class="space-y-1.5">
 							<p class="text-[0.8125rem] text-foreground">Reports</p>
-							<div class="inline-flex rounded-lg border border-border p-0.5 bg-muted/30 gap-0.5">
-								{#each channelOptions as opt}
-									<button
-										type="button"
-										class="px-3 py-1.5 rounded-md text-[0.8125rem] font-medium transition-all
-											{reportChannel === opt.value
-											? 'bg-background shadow-sm text-foreground'
-											: 'text-muted-foreground hover:text-foreground'}"
-										onclick={() => (reportChannel = opt.value)}
-									>{opt.label}</button>
-								{/each}
-							</div>
+							<SegmentedControl options={channelOptions} bind:value={reportChannel} />
 						</div>
 
 						<div class="space-y-1.5">
 							<p class="text-[0.8125rem] text-foreground">Reminders</p>
-							<div class="inline-flex rounded-lg border border-border p-0.5 bg-muted/30 gap-0.5">
-								{#each channelOptions as opt}
-									<button
-										type="button"
-										class="px-3 py-1.5 rounded-md text-[0.8125rem] font-medium transition-all
-											{reminderChannel === opt.value
-											? 'bg-background shadow-sm text-foreground'
-											: 'text-muted-foreground hover:text-foreground'}"
-										onclick={() => (reminderChannel = opt.value)}
-									>{opt.label}</button>
-								{/each}
-							</div>
+							<SegmentedControl options={channelOptions} bind:value={reminderChannel} />
 						</div>
 					</div>
 				</div>

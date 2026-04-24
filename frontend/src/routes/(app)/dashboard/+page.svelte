@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { Button } from '$lib/components/ui/button';
-	import * as Select from '$lib/components/ui/select';
 	import FacetedFilter from '$lib/components/FacetedFilter.svelte';
+	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
 	import { Plus, AlertCircle, Play, Trash2, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -57,26 +57,41 @@
 		return { start, end };
 	}
 
-	const periodLabels: Record<string, string> = { week: 'This week', month: 'This month', all: 'All' };
+	const periodOptions: Array<{ value: 'week' | 'month' | 'all'; label: string }> = [
+		{ value: 'week', label: 'This week' },
+		{ value: 'month', label: 'This month' },
+		{ value: 'all', label: 'All' }
+	];
 
-	const statusColors: Record<string, string> = {
-		pending: 'bg-muted text-muted-foreground',
-		in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-		done: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-		overdue: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-		problem: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+	const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
+		pending: {
+			label: 'Pending',
+			dot: 'bg-muted-foreground/50',
+			badge: 'bg-muted text-muted-foreground'
+		},
+		in_progress: {
+			label: 'In Progress',
+			dot: 'bg-[var(--color-status-blue)]',
+			badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+		},
+		done: {
+			label: 'Done',
+			dot: 'bg-[var(--color-status-green)]',
+			badge: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+		},
+		overdue: {
+			label: 'Overdue',
+			dot: 'bg-[var(--color-status-red)]',
+			badge: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+		},
+		problem: {
+			label: 'Problem',
+			dot: 'bg-[var(--color-status-yellow)]',
+			badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+		}
 	};
 
-	const statusLabels: Record<string, string> = {
-		pending: 'Pending',
-		in_progress: 'In Progress',
-		done: 'Done',
-		overdue: 'Overdue',
-		problem: 'Problem'
-	};
-
-	const statusOptions = Object.entries(statusLabels).map(([value, label]) => ({ value, label }));
-
+	const statusOptions = Object.entries(statusConfig).map(([value, { label }]) => ({ value, label }));
 	const memberOptions = $derived(data.members.map((m) => ({ value: m.id, label: m.name })));
 
 	const filtered = $derived.by(() => {
@@ -111,14 +126,13 @@
 	});
 
 	const hasFilters = $derived(
-		filterStatus.length > 0 || filterMember.length > 0 || !!search || filterPeriod !== 'week'
+		filterStatus.length > 0 || filterMember.length > 0 || !!search
 	);
 
 	function clearFilters() {
 		filterStatus = [];
 		filterMember = [];
 		search = '';
-		filterPeriod = 'week';
 	}
 
 	function formatDate(d: Date | null) {
@@ -137,79 +151,93 @@
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-center justify-between">
-		<h1 class="text-[1.5rem] font-bold">Dashboard</h1>
+	<!-- Header -->
+	<div class="flex items-start justify-between gap-4">
+		<div>
+			<h1 class="text-[1.75rem] font-bold leading-tight">Dashboard</h1>
+			<p class="text-[0.875rem] text-muted-foreground mt-0.5">
+				{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} total
+			</p>
+		</div>
+
 		{#if data.user.role === 'admin'}
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-2 shrink-0">
 				<Button
 					variant="outline"
 					size="sm"
 					onclick={clearReminderLogs}
 					disabled={clearingLogs}
-					class="gap-1.5"
+					class="gap-1.5 text-muted-foreground"
 				>
 					<Trash2 class="size-3.5" />
-					{clearingLogs ? 'Clearing…' : 'Clear reminder logs'}
+					{clearingLogs ? 'Clearing…' : 'Clear logs'}
 				</Button>
 				<Button
 					variant="outline"
 					size="sm"
 					onclick={runScheduler}
 					disabled={schedulerRunning}
-					class="gap-1.5 {schedulerResult === 'ok' ? 'border-green-500 text-green-600' : schedulerResult === 'error' ? 'border-red-500 text-red-600' : ''}"
+					class="gap-1.5 {schedulerResult === 'ok'
+						? 'border-[var(--color-status-green)] text-[var(--color-status-green)]'
+						: schedulerResult === 'error'
+							? 'border-destructive text-destructive'
+							: 'text-muted-foreground'}"
 				>
 					<Play class="size-3.5" />
-					{schedulerRunning ? 'Running…' : schedulerResult === 'ok' ? 'Done' : schedulerResult === 'error' ? 'Error' : 'Run scheduler'}
+					{schedulerRunning
+						? 'Running…'
+						: schedulerResult === 'ok'
+							? 'Done'
+							: schedulerResult === 'error'
+								? 'Error'
+								: 'Run scheduler'}
 				</Button>
 				<Button href="/tasks/new" class="gap-1.5">
 					<Plus class="size-4" />
-					New Task
+					New task
 				</Button>
 			</div>
 		{/if}
 	</div>
 
-	<!-- Counters -->
-	<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+	<!-- Stat cards -->
+	<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
 		{#each Object.entries(counts) as [status, count]}
+			{@const cfg = statusConfig[status]}
 			<button
 				onclick={() => {
 					filterStatus = filterStatus.includes(status)
 						? filterStatus.filter((s) => s !== status)
 						: [...filterStatus, status];
 				}}
-				class="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent
-					{filterStatus.includes(status) ? 'ring-2 ring-ring' : ''}"
+				class="rounded-xl border border-border bg-card p-4 text-left transition-all hover:bg-accent
+					{filterStatus.includes(status) ? 'ring-2 ring-ring bg-accent' : ''}"
 			>
-				<p class="text-[0.75rem] font-medium text-muted-foreground uppercase tracking-wide">
-					{statusLabels[status]}
-				</p>
-				<p class="mt-1 text-[1.5rem] font-bold">{count}</p>
+				<div class="flex items-center gap-1.5 mb-3">
+					<span class="size-1.5 rounded-full shrink-0 {cfg.dot}"></span>
+					<p class="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground">
+						{cfg.label}
+					</p>
+				</div>
+				<p class="text-[1.75rem] font-bold leading-none tabular-nums">{count}</p>
 			</button>
 		{/each}
 	</div>
 
 	<!-- Filters -->
-	<div class="flex flex-wrap items-center gap-3">
+	<div class="flex flex-wrap items-center gap-2">
 		<div class="relative">
-			<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+			<Search
+				class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none"
+			/>
 			<input
 				bind:value={search}
 				placeholder="Search tasks…"
-				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-48"
+				class="rounded-md border border-input bg-background pl-8 pr-3 py-1.5 text-[0.875rem] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring w-44"
 			/>
 		</div>
 
-		<Select.Root bind:value={filterPeriod}>
-			<Select.Trigger>
-				<Select.Value label={periodLabels[filterPeriod]} />
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="week">This week</Select.Item>
-				<Select.Item value="month">This month</Select.Item>
-				<Select.Item value="all">All</Select.Item>
-			</Select.Content>
-		</Select.Root>
+		<SegmentedControl options={periodOptions} bind:value={filterPeriod} />
 
 		<FacetedFilter label="Status" options={statusOptions} bind:selected={filterStatus} />
 
@@ -220,7 +248,7 @@
 		{#if hasFilters}
 			<button
 				onclick={clearFilters}
-				class="text-[0.875rem] text-muted-foreground hover:text-foreground underline"
+				class="text-[0.8125rem] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
 			>
 				Clear filters
 			</button>
@@ -230,56 +258,92 @@
 	<!-- Task table -->
 	<div class="rounded-xl border border-border bg-card overflow-hidden">
 		{#if filtered.length === 0}
-			<div class="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-				<AlertCircle class="size-8" />
+			<div class="flex flex-col items-center gap-3 py-20 text-muted-foreground">
+				<AlertCircle class="size-7 opacity-40" />
 				{#if hasFilters}
-					<p class="text-[0.875rem]">{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters</p>
-					<Button variant="outline" size="sm" onclick={clearFilters}>
-						Clear filters
-					</Button>
+					<div class="text-center space-y-1">
+						<p class="text-[0.875rem]">
+							{data.tasks.length} task{data.tasks.length === 1 ? '' : 's'} hidden by filters
+						</p>
+					</div>
+					<Button variant="outline" size="sm" onclick={clearFilters}>Clear filters</Button>
 				{:else}
-					<p class="text-[0.875rem]">No tasks found.</p>
+					<p class="text-[0.875rem]">No tasks yet.</p>
+					{#if data.user.role === 'admin'}
+						<Button href="/tasks/new" size="sm" class="gap-1.5">
+							<Plus class="size-3.5" />
+							Create first task
+						</Button>
+					{/if}
 				{/if}
 			</div>
 		{:else}
 			<table class="w-full text-[0.875rem]">
 				<thead>
-					<tr class="border-b border-border bg-muted/40">
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Title</th>
-						{#if data.user.role === 'admin'}
-							<th class="px-4 py-3 text-left font-medium text-muted-foreground">Assignee</th>
-						{/if}
-						<th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+					<tr class="border-b border-border bg-muted/30">
 						<th
-							class="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
-							onclick={() => (sortDeadline = sortDeadline === 'asc' ? 'desc' : sortDeadline === 'desc' ? null : 'asc')}
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+							>Title</th
 						>
-							Deadline {sortDeadline === 'asc' ? '↑' : sortDeadline === 'desc' ? '↓' : '↕'}
+						{#if data.user.role === 'admin'}
+							<th
+								class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+								>Assignee</th
+							>
+						{/if}
+						<th
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground"
+							>Status</th
+						>
+						<th
+							class="px-4 py-3 text-left text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+							onclick={() =>
+								(sortDeadline =
+									sortDeadline === 'asc' ? 'desc' : sortDeadline === 'desc' ? null : 'asc')}
+						>
+							Deadline
+							<span class="ml-0.5 opacity-50"
+								>{sortDeadline === 'asc' ? '↑' : sortDeadline === 'desc' ? '↓' : '↕'}</span
+							>
 						</th>
 						<th class="px-4 py-3"></th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each filtered as task}
-						<tr class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors
-							{isOverdue(task) ? 'bg-red-50/50 dark:bg-red-950/20' : ''}">
+						<tr
+							class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors
+								{isOverdue(task) ? 'bg-destructive/5 dark:bg-destructive/10' : ''}"
+						>
 							<td class="px-4 py-3 font-medium">
-								{#if isOverdue(task)}
-									<span class="mr-1.5 text-destructive">⚠</span>
-								{/if}
-								{task.title}
+								<div class="flex items-center gap-2">
+									{#if isOverdue(task)}
+										<span class="size-1.5 rounded-full bg-destructive shrink-0"></span>
+									{/if}
+									{task.title}
+								</div>
 							</td>
 							{#if data.user.role === 'admin'}
 								<td class="px-4 py-3 text-muted-foreground">{task.assigneeName ?? '—'}</td>
 							{/if}
 							<td class="px-4 py-3">
-								<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-medium {statusColors[task.status]}">
-									{statusLabels[task.status]}
+								<span
+									class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-medium {statusConfig[
+										task.status
+									]?.badge ?? 'bg-muted text-muted-foreground'}"
+								>
+									{statusConfig[task.status]?.label ?? task.status}
 								</span>
 							</td>
-							<td class="px-4 py-3 text-muted-foreground">{formatDate(task.deadlineDate)}</td>
+							<td class="px-4 py-3 text-muted-foreground tabular-nums"
+								>{formatDate(task.deadlineDate)}</td
+							>
 							<td class="px-4 py-3 text-right">
-								<a href="/tasks/{task.id}" class="text-[0.875rem] text-primary hover:underline">View</a>
+								<a
+									href="/tasks/{task.id}"
+									class="text-[0.8125rem] font-medium text-primary hover:text-primary/70 transition-colors"
+									>View</a
+								>
 							</td>
 						</tr>
 					{/each}
@@ -287,4 +351,10 @@
 			</table>
 		{/if}
 	</div>
+
+	{#if filtered.length > 0}
+		<p class="text-[0.75rem] text-muted-foreground text-right">
+			Showing {filtered.length} of {data.tasks.length} task{data.tasks.length === 1 ? '' : 's'}
+		</p>
+	{/if}
 </div>
