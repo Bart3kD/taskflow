@@ -13,6 +13,7 @@ export const load: PageServerLoad = async (event) => {
 			id: users.id,
 			name: users.name,
 			email: users.email,
+			role: users.role,
 			telegramChatId: users.telegramChatId
 		})
 		.from(users)
