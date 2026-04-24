@@ -1,6 +1,8 @@
 import type { Task, User } from '$lib/db/schema';
 import { TELEGRAM_BOT_TOKEN } from '$env/static/private';
 
+type InlineKeyboard = Array<Array<{ text: string; callback_data: string }>>;
+
 export async function sendMessage(chatId: string, text: string): Promise<void> {
 	await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
 		method: 'POST',
@@ -10,6 +12,49 @@ export async function sendMessage(chatId: string, text: string): Promise<void> {
 			text,
 			parse_mode: 'HTML',
 			disable_web_page_preview: true
+		})
+	});
+}
+
+async function sendMessageWithButtons(
+	chatId: string,
+	text: string,
+	keyboard: InlineKeyboard
+): Promise<void> {
+	await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			chat_id: chatId,
+			text,
+			parse_mode: 'HTML',
+			reply_markup: { inline_keyboard: keyboard }
+		})
+	});
+}
+
+export async function answerCallbackQuery(id: string, text?: string): Promise<void> {
+	await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ callback_query_id: id, text: text ?? '' })
+	});
+}
+
+export async function editMessageText(
+	chatId: string,
+	messageId: number,
+	text: string
+): Promise<void> {
+	await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			chat_id: chatId,
+			message_id: messageId,
+			text,
+			parse_mode: 'HTML',
+			reply_markup: { inline_keyboard: [] }
 		})
 	});
 }
@@ -44,25 +89,26 @@ export async function sendReminderTelegram(
 
 export async function sendReportTelegram(
 	user: Pick<User, 'telegramChatId' | 'name'>,
-	taskTokens: { task: Pick<Task, 'title'>; token: string }[],
-	appUrl: string
+	taskTokens: { task: Pick<Task, 'title'>; token: string }[]
 ): Promise<void> {
 	if (!user.telegramChatId) return;
 
-	const taskLines = taskTokens
-		.map(({ task, token }, i) => {
-			const base = `${appUrl}/confirm/${token}`;
-			return [
-				`<b>${i + 1}. ${task.title}</b>`,
-				`<a href="${base}?status=done">✅ Done</a> · <a href="${base}?status=in_progress">🔄 In Progress</a> · <a href="${base}?status=problem">⚠️ Problem</a>`
-			].join('\n');
-		})
-		.join('\n\n');
+	const intro =
+		taskTokens.length === 1
+			? `📋 <b>Status update requested</b>\n\nHi ${user.name}, please update the status of your task:`
+			: `📋 <b>Status update requested</b>\n\nHi ${user.name}, please update the status of your tasks:`;
 
-	await sendMessage(
-		user.telegramChatId,
-		`📋 <b>Status update requested</b>\n\nHi ${user.name}, please update the status of your tasks:\n\n${taskLines}`
-	);
+	await sendMessage(user.telegramChatId, intro);
+
+	for (const { task, token } of taskTokens) {
+		await sendMessageWithButtons(user.telegramChatId, `<b>${task.title}</b>`, [
+			[
+				{ text: '✅ Done', callback_data: `confirm:${token}:done` },
+				{ text: '🔄 In Progress', callback_data: `confirm:${token}:in_progress` },
+				{ text: '⚠️ Problem', callback_data: `confirm:${token}:problem` }
+			]
+		]);
+	}
 }
 
 export async function sendDeletionTelegram(

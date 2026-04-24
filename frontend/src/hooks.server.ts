@@ -9,8 +9,14 @@ if (TELEGRAM_BOT_TOKEN && APP_URL && !APP_URL.includes('localhost')) {
 	fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ url: `${APP_URL}/api/telegram/webhook` })
-	}).catch((err) => console.error('Telegram webhook registration failed:', err));
+		body: JSON.stringify({
+			url: `${APP_URL}/api/telegram/webhook`,
+			allowed_updates: ['message', 'callback_query']
+		})
+	})
+		.then((r) => r.json())
+		.then((r) => console.log('Telegram webhook registered:', JSON.stringify(r)))
+		.catch((err) => console.error('Telegram webhook registration failed:', err));
 }
 
 const g = globalThis as typeof globalThis & { __cronRegistered?: boolean };

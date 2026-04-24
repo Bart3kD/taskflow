@@ -28,7 +28,8 @@ function shouldSendReport(
 	if (currentHour < reportHour) return false;
 
 	if (schedule.reportFrequency === 'weekly') {
-		return now.getDay() === (schedule.reportDayOfWeek ?? 1);
+		// UI stores Mon=0..Sun=6, JS getDay() uses Sun=0..Sat=6 → convert with (n+1)%7
+		return now.getDay() === ((schedule.reportDayOfWeek ?? 0) + 1) % 7;
 	}
 
 	if (schedule.reportFrequency === 'every_n_days') {
@@ -104,7 +105,7 @@ export async function processReports(): Promise<void> {
 		}
 
 		if (channel === 'telegram' || channel === 'both') {
-			await sendReportTelegram(user, taskTokens, APP_URL);
+			await sendReportTelegram(user, taskTokens);
 		}
 
 		await db.insert(notificationLogs).values({
