@@ -5,7 +5,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-
 	import { untrack } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -14,6 +13,7 @@
 	let name = $state(untrack(() => data.member.name));
 	let userError = $state('');
 	let userLoading = $state(false);
+	let userSuccess = $state(false);
 
 	// Telegram connection
 	let telegramLinkUrl = $state('');
@@ -56,8 +56,18 @@
 	let reportTime = $state(untrack(() => data.schedule?.reportTime ?? '09:00'));
 	let reportChannel = $state(untrack(() => data.schedule?.reportChannel ?? 'email'));
 	let reminderChannel = $state(untrack(() => data.schedule?.reminderChannel ?? 'email'));
-	let reminderDaysBefore = $state(untrack(() => (data.schedule?.reminderDaysBefore ?? [2, 1, 0]).join(', ')));
+
+	let reminderDaysSet = $state(new Set<number>(untrack(() => data.schedule?.reminderDaysBefore ?? [2, 1, 0])));
+
+	function toggleDay(day: number) {
+		const next = new Set(reminderDaysSet);
+		if (next.has(day)) next.delete(day);
+		else next.add(day);
+		reminderDaysSet = next;
+	}
+
 	let scheduleError = $state('');
+	let scheduleSuccess = $state(false);
 	let scheduleLoading = $state(false);
 
 	const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -66,6 +76,7 @@
 		e.preventDefault();
 		userLoading = true;
 		userError = '';
+		userSuccess = false;
 		const res = await fetch(`/api/users/${data.member.id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -73,18 +84,19 @@
 		});
 		userLoading = false;
 		if (!res.ok) userError = 'Failed to save changes.';
-		else await invalidateAll();
+		else {
+			userSuccess = true;
+			await invalidateAll();
+		}
 	}
 
 	async function saveSchedule(e: SubmitEvent) {
 		e.preventDefault();
 		scheduleLoading = true;
 		scheduleError = '';
+		scheduleSuccess = false;
 
-		const days = reminderDaysBefore
-			.split(',')
-			.map((s) => parseInt(s.trim(), 10))
-			.filter((n) => !isNaN(n) && n >= 0);
+		const days = [...reminderDaysSet].filter((n) => n >= 0).sort((a, b) => b - a);
 
 		const res = await fetch(`/api/users/${data.member.id}/schedule`, {
 			method: 'PATCH',
@@ -101,168 +113,318 @@
 		});
 		scheduleLoading = false;
 		if (!res.ok) scheduleError = 'Failed to save schedule.';
-		else await invalidateAll();
+		else {
+			scheduleSuccess = true;
+			await invalidateAll();
+		}
 	}
+
+	function initials(n: string): string {
+		return n
+			.split(' ')
+			.map((w) => w[0])
+			.join('')
+			.slice(0, 2)
+			.toUpperCase();
+	}
+
+	const reminderDayOptions = [0, 1, 2, 3, 5, 7];
+
+	const frequencyOptions: Array<{ value: 'every_n_days' | 'weekly'; label: string }> = [
+		{ value: 'every_n_days', label: 'Every N days' },
+		{ value: 'weekly', label: 'Weekly' }
+	];
+
+	const channelOptions: Array<{ value: 'email' | 'telegram' | 'both'; label: string }> = [
+		{ value: 'email', label: 'Email' },
+		{ value: 'telegram', label: 'Telegram' },
+		{ value: 'both', label: 'Both' }
+	];
 </script>
 
-<div class="max-w-2xl space-y-8">
-	<div class="flex items-center gap-3">
-		<a href="/team" class="text-[0.875rem] text-muted-foreground hover:text-foreground">← Team</a>
-		<h1 class="text-[1.5rem] font-bold">{data.member.name}</h1>
+<div class="space-y-8 max-w-4xl">
+	<!-- Page header -->
+	<div>
+		<a
+			href="/team"
+			class="inline-flex items-center gap-1.5 text-[0.8125rem] text-muted-foreground hover:text-foreground transition-colors mb-6"
+		>
+			<svg
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<path d="m15 18-6-6 6-6" />
+			</svg>
+			Back to team
+		</a>
+
+		<div class="flex items-center gap-5">
+			<div
+				class="size-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 select-none"
+			>
+				<span class="text-primary text-[1.5rem] font-bold tracking-tight"
+					>{initials(data.member.name)}</span
+				>
+			</div>
+			<div class="flex-1 min-w-0">
+				<div class="flex items-center gap-3 flex-wrap">
+					<h1 class="text-[1.75rem] font-bold leading-tight">{data.member.name}</h1>
+					<span
+						class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide
+						{data.member.role === 'admin'
+							? 'bg-primary text-primary-foreground'
+							: 'bg-secondary text-secondary-foreground'}"
+					>
+						{data.member.role}
+					</span>
+				</div>
+				<p class="text-muted-foreground text-[0.875rem] mt-0.5">{data.member.email}</p>
+			</div>
+		</div>
 	</div>
 
-	<!-- User info section -->
-	<section class="rounded-xl border border-border bg-card p-6 space-y-5">
-		<h2 class="text-[1rem] font-semibold">User details</h2>
-
-		<form onsubmit={saveUser} class="space-y-4">
-			<div class="space-y-1.5">
-				<Label for="name">Name</Label>
-				<Input id="name" bind:value={name} required />
-			</div>
-
-			<div class="space-y-1.5">
-				<Label for="email">Email</Label>
-				<Input id="email" value={data.member.email} disabled class="opacity-60" />
-			</div>
-
-			{#if userError}
-				<p class="text-[0.875rem] text-destructive">{userError}</p>
-			{/if}
-
-			<Button type="submit" disabled={userLoading}>
-				{userLoading ? 'Saving…' : 'Save'}
-			</Button>
-		</form>
-
-		<div class="border-t border-border pt-5 space-y-3">
-			<div class="flex items-center justify-between">
-				<div>
-					<p class="text-[0.875rem] font-medium">Telegram</p>
-					{#if data.member.telegramChatId}
-						<p class="text-[0.75rem] text-green-600 dark:text-green-400">✓ Connected</p>
-					{:else}
-						<p class="text-[0.75rem] text-muted-foreground">Not connected</p>
-					{/if}
+	<!-- Content grid -->
+	<div class="grid lg:grid-cols-[1fr_1.25fr] gap-6 items-start">
+		<!-- Left column: Profile + Telegram -->
+		<div class="space-y-5">
+			<!-- Profile section -->
+			<section class="rounded-xl border border-border bg-card p-6 space-y-5">
+				<div class="flex items-center gap-2">
+					<div class="size-1.5 rounded-full bg-primary"></div>
+					<h2 class="text-[0.9375rem] font-semibold">Profile</h2>
 				</div>
-				{#if data.member.telegramChatId}
-					<Button variant="outline" onclick={disconnectTelegram}>Disconnect</Button>
-				{:else}
-					<Button variant="outline" onclick={generateTelegramLink} disabled={telegramLinkLoading}>
-						{telegramLinkLoading ? 'Generating…' : 'Generate connect link'}
-					</Button>
-				{/if}
-			</div>
 
-			{#if telegramLinkUrl}
-				<div class="rounded-md border border-border bg-muted/40 p-3 space-y-2">
-					<p class="text-[0.75rem] text-muted-foreground">
-						Share this link with <strong>{data.member.name}</strong>. After clicking it and opening the bot, Telegram will be connected automatically. Link expires in 24h.
-					</p>
-					<div class="flex items-center gap-2">
-						<code class="flex-1 truncate text-[0.75rem]">{telegramLinkUrl}</code>
-						<Button variant="outline" size="sm" onclick={copyLink}>
-							{telegramLinkCopied ? 'Copied!' : 'Copy'}
+				<form onsubmit={saveUser} class="space-y-4">
+					<div class="space-y-1.5">
+						<Label for="name" class="text-[0.8125rem]">Display name</Label>
+						<Input id="name" bind:value={name} required />
+					</div>
+
+					<div class="space-y-1.5">
+						<Label for="email" class="text-[0.8125rem]">Email address</Label>
+						<Input id="email" value={data.member.email} disabled class="opacity-50 cursor-not-allowed" />
+					</div>
+
+					<div class="flex items-center justify-between pt-1">
+						<div>
+							{#if userError}
+								<p class="text-[0.8125rem] text-destructive">{userError}</p>
+							{:else if userSuccess}
+								<p class="text-[0.8125rem] text-[var(--color-status-green)]">Changes saved.</p>
+							{/if}
+						</div>
+						<Button type="submit" size="sm" disabled={userLoading}>
+							{userLoading ? 'Saving…' : 'Save profile'}
 						</Button>
 					</div>
+				</form>
+			</section>
+
+			<!-- Telegram section -->
+			<section class="rounded-xl border border-border bg-card p-6 space-y-4">
+				<div class="flex items-center gap-2">
+					<div class="size-1.5 rounded-full bg-primary"></div>
+					<h2 class="text-[0.9375rem] font-semibold">Telegram</h2>
 				</div>
-			{/if}
+
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-2.5">
+						{#if data.member.telegramChatId}
+							<span class="relative flex size-2.5">
+								<span
+									class="animate-ping absolute inline-flex size-full rounded-full bg-[var(--color-status-green)] opacity-75"
+								></span>
+								<span
+									class="relative inline-flex rounded-full size-2.5 bg-[var(--color-status-green)]"
+								></span>
+							</span>
+							<span class="text-[0.875rem] font-medium">Connected</span>
+						{:else}
+							<span class="size-2.5 rounded-full bg-muted-foreground/30 shrink-0"></span>
+							<span class="text-[0.875rem] text-muted-foreground">Not connected</span>
+						{/if}
+					</div>
+					{#if data.member.telegramChatId}
+						<Button variant="outline" size="sm" onclick={disconnectTelegram}>Disconnect</Button>
+					{:else}
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={generateTelegramLink}
+							disabled={telegramLinkLoading}
+						>
+							{telegramLinkLoading ? 'Generating…' : 'Generate link'}
+						</Button>
+					{/if}
+				</div>
+
+				{#if telegramLinkUrl}
+					<div class="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+						<p class="text-[0.75rem] text-muted-foreground leading-relaxed">
+							Share with <strong class="text-foreground">{data.member.name}</strong> — after clicking,
+							the bot connects automatically. Expires in 24h.
+						</p>
+						<div
+							class="flex items-center gap-2 rounded-md bg-background border border-border px-3 py-2"
+						>
+							<code class="flex-1 truncate text-[0.75rem] text-foreground">{telegramLinkUrl}</code>
+							<button
+								type="button"
+								onclick={copyLink}
+								class="shrink-0 text-[0.75rem] font-medium text-primary hover:text-primary/70 transition-colors"
+							>
+								{telegramLinkCopied ? '✓ Copied' : 'Copy'}
+							</button>
+						</div>
+					</div>
+				{/if}
+			</section>
 		</div>
-	</section>
 
-	<!-- Notification schedule section -->
-	<section class="rounded-xl border border-border bg-card p-6 space-y-5">
-		<h2 class="text-[1rem] font-semibold">Notification schedule</h2>
-
-		<form onsubmit={saveSchedule} class="space-y-4">
-			<div class="space-y-1.5">
-				<Label for="repFreq">Report frequency</Label>
-				<Select.Root bind:value={reportFrequency}>
-					<Select.Trigger class="w-full">
-						<Select.Value label={reportFrequency === 'weekly' ? 'Weekly' : 'Every N days (configured per report send)'} />
-					</Select.Trigger>
-					<Select.Content>
-						<Select.Item value="every_n_days">Every N days (configured per report send)</Select.Item>
-						<Select.Item value="weekly">Weekly</Select.Item>
-					</Select.Content>
-				</Select.Root>
+		<!-- Right column: Schedule -->
+		<section class="rounded-xl border border-border bg-card p-6 space-y-6">
+			<div class="flex items-center gap-2">
+				<div class="size-1.5 rounded-full bg-primary"></div>
+				<h2 class="text-[0.9375rem] font-semibold">Notification schedule</h2>
 			</div>
 
-			{#if reportFrequency === 'every_n_days'}
-				<div class="space-y-1.5">
-					<Label for="repN">Every N days</Label>
-					<Input id="repN" type="number" min="1" bind:value={reportEveryNDays} />
-				</div>
-			{/if}
-
-			{#if reportFrequency === 'weekly'}
-				<div class="space-y-1.5">
-					<Label for="repDow">Day of week</Label>
-					<Select.Root bind:value={reportDayOfWeek}>
-						<Select.Trigger class="w-full">
-							<Select.Value label={weekdays[parseInt(reportDayOfWeek)]} />
-						</Select.Trigger>
-						<Select.Content>
-							{#each weekdays as day, i}
-								<Select.Item value={String(i)}>{day}</Select.Item>
+			<form onsubmit={saveSchedule} class="space-y-6">
+				<!-- Report frequency -->
+				<div class="space-y-3">
+					<p class="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground">
+						Report frequency
+					</p>
+					<div class="space-y-2.5">
+						<div class="inline-flex rounded-lg border border-border p-0.5 bg-muted/30 gap-0.5">
+							{#each frequencyOptions as opt}
+								<button
+									type="button"
+									class="px-3 py-1.5 rounded-md text-[0.8125rem] font-medium transition-all
+										{reportFrequency === opt.value
+										? 'bg-background shadow-sm text-foreground'
+										: 'text-muted-foreground hover:text-foreground'}"
+									onclick={() => (reportFrequency = opt.value)}
+								>{opt.label}</button>
 							{/each}
-						</Select.Content>
-					</Select.Root>
+						</div>
+
+						{#if reportFrequency === 'every_n_days'}
+							<div class="flex items-center gap-3">
+								<span class="text-[0.8125rem] text-muted-foreground shrink-0">Every</span>
+								<Input
+									id="repN"
+									type="number"
+									min="1"
+									bind:value={reportEveryNDays}
+									class="w-20"
+								/>
+								<span class="text-[0.8125rem] text-muted-foreground">days</span>
+							</div>
+						{/if}
+
+						{#if reportFrequency === 'weekly'}
+							<Select.Root bind:value={reportDayOfWeek}>
+								<Select.Trigger class="w-44">
+									<Select.Value label={weekdays[parseInt(reportDayOfWeek)]} />
+								</Select.Trigger>
+								<Select.Content>
+									{#each weekdays as day, i}
+										<Select.Item value={String(i)}>{day}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						{/if}
+					</div>
 				</div>
-			{/if}
 
-			<div class="space-y-1.5">
-				<Label for="repTime">Send time</Label>
-				<Input id="repTime" type="time" bind:value={reportTime} />
-			</div>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div class="space-y-1.5">
-					<Label for="repChannel">Report channel</Label>
-					<Select.Root bind:value={reportChannel}>
-						<Select.Trigger class="w-full">
-							<Select.Value label={{ email: 'Email', telegram: 'Telegram', both: 'Both' }[reportChannel]} />
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="email">Email</Select.Item>
-							<Select.Item value="telegram">Telegram</Select.Item>
-							<Select.Item value="both">Both</Select.Item>
-						</Select.Content>
-					</Select.Root>
+				<!-- Send time -->
+				<div class="space-y-2.5">
+					<p class="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground">
+						Send time
+					</p>
+					<Input id="repTime" type="time" bind:value={reportTime} class="w-36" />
 				</div>
 
-				<div class="space-y-1.5">
-					<Label for="remChannel">Reminder channel</Label>
-					<Select.Root bind:value={reminderChannel}>
-						<Select.Trigger class="w-full">
-							<Select.Value label={{ email: 'Email', telegram: 'Telegram', both: 'Both' }[reminderChannel]} />
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="email">Email</Select.Item>
-							<Select.Item value="telegram">Telegram</Select.Item>
-							<Select.Item value="both">Both</Select.Item>
-						</Select.Content>
-					</Select.Root>
+				<!-- Channels -->
+				<div class="space-y-3">
+					<p class="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground">
+						Channels
+					</p>
+					<div class="space-y-3">
+						<div class="space-y-1.5">
+							<p class="text-[0.8125rem] text-foreground">Reports</p>
+							<div class="inline-flex rounded-lg border border-border p-0.5 bg-muted/30 gap-0.5">
+								{#each channelOptions as opt}
+									<button
+										type="button"
+										class="px-3 py-1.5 rounded-md text-[0.8125rem] font-medium transition-all
+											{reportChannel === opt.value
+											? 'bg-background shadow-sm text-foreground'
+											: 'text-muted-foreground hover:text-foreground'}"
+										onclick={() => (reportChannel = opt.value)}
+									>{opt.label}</button>
+								{/each}
+							</div>
+						</div>
+
+						<div class="space-y-1.5">
+							<p class="text-[0.8125rem] text-foreground">Reminders</p>
+							<div class="inline-flex rounded-lg border border-border p-0.5 bg-muted/30 gap-0.5">
+								{#each channelOptions as opt}
+									<button
+										type="button"
+										class="px-3 py-1.5 rounded-md text-[0.8125rem] font-medium transition-all
+											{reminderChannel === opt.value
+											? 'bg-background shadow-sm text-foreground'
+											: 'text-muted-foreground hover:text-foreground'}"
+										onclick={() => (reminderChannel = opt.value)}
+									>{opt.label}</button>
+								{/each}
+							</div>
+						</div>
+					</div>
 				</div>
-			</div>
 
-			<div class="space-y-1.5">
-				<Label for="remDays">Reminder days before deadline</Label>
-				<Input
-					id="remDays"
-					bind:value={reminderDaysBefore}
-					placeholder="e.g. 2, 1, 0"
-				/>
-				<p class="text-[0.75rem] text-muted-foreground">Comma-separated. 0 = on the deadline day.</p>
-			</div>
+				<!-- Reminder timing -->
+				<div class="space-y-3">
+					<p class="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground">
+						Remind before deadline
+					</p>
+					<div class="flex flex-wrap gap-2">
+						{#each reminderDayOptions as day}
+							<button
+								type="button"
+								class="px-3 py-1.5 rounded-full border text-[0.8125rem] font-medium transition-all
+									{reminderDaysSet.has(day)
+									? 'bg-primary text-primary-foreground border-primary'
+									: 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'}"
+								onclick={() => toggleDay(day)}
+							>
+								{day === 0 ? 'On due date' : `${day}d before`}
+							</button>
+						{/each}
+					</div>
+				</div>
 
-			{#if scheduleError}
-				<p class="text-[0.875rem] text-destructive">{scheduleError}</p>
-			{/if}
-
-			<Button type="submit" disabled={scheduleLoading}>
-				{scheduleLoading ? 'Saving…' : 'Save schedule'}
-			</Button>
-		</form>
-	</section>
+				<div class="flex items-center justify-between pt-2 border-t border-border">
+					<div>
+						{#if scheduleError}
+							<p class="text-[0.8125rem] text-destructive">{scheduleError}</p>
+						{:else if scheduleSuccess}
+							<p class="text-[0.8125rem] text-[var(--color-status-green)]">Schedule saved.</p>
+						{/if}
+					</div>
+					<Button type="submit" size="sm" disabled={scheduleLoading}>
+						{scheduleLoading ? 'Saving…' : 'Save schedule'}
+					</Button>
+				</div>
+			</form>
+		</section>
+	</div>
 </div>
