@@ -52,7 +52,7 @@
 	// Schedule fields
 	let reportFrequency = $state(untrack(() => data.schedule?.reportFrequency ?? 'every_n_days'));
 	let reportEveryNDays = $state(untrack(() => data.schedule?.reportEveryNDays ?? 7));
-	let reportDayOfWeek = $state(String(untrack(() => data.schedule?.reportDayOfWeek ?? 1)));
+	let reportDayOfWeek = $state(String(untrack(() => data.schedule?.reportDayOfWeek ?? 0)));
 	let reportTime = $state(untrack(() => data.schedule?.reportTime ?? '09:00'));
 	let reportChannel = $state(untrack(() => data.schedule?.reportChannel ?? 'email'));
 	let reminderChannel = $state(untrack(() => data.schedule?.reminderChannel ?? 'email'));
@@ -70,7 +70,7 @@
 	let scheduleSuccess = $state(false);
 	let scheduleLoading = $state(false);
 
-	const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 	async function saveUser(e: SubmitEvent) {
 		e.preventDefault();
@@ -428,3 +428,13 @@
 		</section>
 	</div>
 </div>
+
+<style lang="postcss">
+	@reference "tailwindcss";
+	:global(input[type='time']::-webkit-calendar-picker-indicator) {
+		filter: invert(0);
+	}
+	:global(.dark input[type='time']::-webkit-calendar-picker-indicator) {
+		filter: invert(1);
+	}
+</style>
