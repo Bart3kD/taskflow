@@ -396,13 +396,3 @@
 		</section>
 	</div>
 </div>
-
-<style lang="postcss">
-	@reference "tailwindcss";
-	:global(input[type='time']::-webkit-calendar-picker-indicator) {
-		filter: invert(0);
-	}
-	:global(.dark input[type='time']::-webkit-calendar-picker-indicator) {
-		filter: invert(1);
-	}
-</style>
