@@ -3,6 +3,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import FacetedFilter from '$lib/components/FacetedFilter.svelte';
 	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
+	import TaskSheet from '$lib/components/TaskSheet.svelte';
+	import { invalidateAll } from '$app/navigation';
 	import { Plus, AlertCircle, Play, Trash2, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -128,6 +130,8 @@
 	const hasFilters = $derived(
 		filterStatus.length > 0 || filterMember.length > 0 || !!search
 	);
+
+	let selectedTaskId = $state<string | null>(null);
 
 	function clearFilters() {
 		filterStatus = [];
@@ -306,14 +310,15 @@
 								>{sortDeadline === 'asc' ? '↑' : sortDeadline === 'desc' ? '↓' : '↕'}</span
 							>
 						</th>
-						<th class="px-4 py-3"></th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each filtered as task}
 						<tr
-							class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors
-								{isOverdue(task) ? 'bg-destructive/5 dark:bg-destructive/10' : ''}"
+							onclick={() => (selectedTaskId = task.id)}
+							class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer
+								{isOverdue(task) ? 'bg-destructive/5 dark:bg-destructive/10' : ''}
+								{selectedTaskId === task.id ? 'bg-muted/40' : ''}"
 						>
 							<td class="px-4 py-3 font-medium">
 								<div class="flex items-center gap-2">
@@ -338,13 +343,6 @@
 							<td class="px-4 py-3 text-muted-foreground tabular-nums"
 								>{formatDate(task.deadlineDate)}</td
 							>
-							<td class="px-4 py-3 text-right">
-								<a
-									href="/tasks/{task.id}"
-									class="text-[0.8125rem] font-medium text-primary hover:text-primary/70 transition-colors"
-									>View</a
-								>
-							</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -358,3 +356,13 @@
 		</p>
 	{/if}
 </div>
+
+<TaskSheet
+	taskId={selectedTaskId}
+	members={data.members}
+	currentUserId={data.user.id}
+	userRole={data.user.role}
+	onclose={() => (selectedTaskId = null)}
+	onupdated={async () => { await invalidateAll(); }}
+	ondeleted={async () => { selectedTaskId = null; await invalidateAll(); }}
+/>

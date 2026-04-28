@@ -15,11 +15,12 @@
 		members: { id: string; name: string }[];
 		currentUserId: string;
 		loading: boolean;
+		bare?: boolean;
 		task?: Pick<Task, 'title' | 'description' | 'assignedTo' | 'deadlineType' | 'recurrenceType' | 'deadlineDate' | 'recurrenceConfig' | 'status'>;
 		onsubmit: (payload: Record<string, unknown>) => void;
 	};
 
-	let { members, currentUserId, loading, task, onsubmit }: Props = $props();
+	let { members, currentUserId, loading, bare = false, task, onsubmit }: Props = $props();
 
 	let title = $state(untrack(() => task?.title ?? ''));
 	let description = $state(untrack(() => task?.description ?? ''));
@@ -90,7 +91,7 @@
 	}
 </script>
 
-<form onsubmit={submit} class="space-y-5 rounded-xl border border-border bg-card p-6">
+<form onsubmit={submit} class="space-y-5 {bare ? '' : 'rounded-xl border border-border bg-card p-6'}">
 	<div class="space-y-1.5">
 		<Label for="title">Title *</Label>
 		<Input id="title" bind:value={title} placeholder="Task title" required />
