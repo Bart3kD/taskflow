@@ -11,7 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"db:push": "drizzle-kit push",
-		"db:migrate": "drizzle-kit migrate",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "bun run src/lib/db/migrate.ts",
 		"db:seed": "bun run src/lib/db/seed.ts",
 		"db:studio": "drizzle-kit studio"
 	},
