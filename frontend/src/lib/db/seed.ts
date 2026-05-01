@@ -9,22 +9,21 @@ const db = drizzle(postgres(url), { schema });
 import bcrypt from 'bcryptjs';
 
 async function seed() {
-	const passwordHash = await bcrypt.hash('admin123', 12);
+	const email = process.env.ADMIN_EMAIL ?? 'admin@taskflow.app';
+	const password = process.env.ADMIN_PASSWORD ?? 'admin123';
+	const name = process.env.ADMIN_NAME ?? 'Admin';
+
+	const passwordHash = await bcrypt.hash(password, 12);
 
 	const [admin] = await db
 		.insert(users)
-		.values({
-			name: 'Admin',
-			email: 'admin@taskflow.app',
-			passwordHash,
-			role: 'admin'
-		})
+		.values({ name, email, passwordHash, role: 'admin' })
 		.onConflictDoNothing()
 		.returning({ id: users.id });
 
 	if (admin) {
 		await db.insert(notificationSchedules).values({ userId: admin.id }).onConflictDoNothing();
-		console.log('Seeded admin user: admin@taskflow.app / admin123');
+		console.log(`Seeded admin user: ${email}`);
 	} else {
 		console.log('Admin user already exists, skipping.');
 	}

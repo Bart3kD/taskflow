@@ -112,13 +112,14 @@ This will:
 
 Open [http://localhost:3000](http://localhost:3000).
 
-**Default admin credentials:**
+**Default admin credentials** (set in `.env` before first run):
 ```
-Email:    admin@taskflow.app
-Password: admin123
+ADMIN_EMAIL=admin@taskflow.app
+ADMIN_PASSWORD=admin123
+ADMIN_NAME=Admin
 ```
 
-Change the password immediately after first login via Settings.
+Change these in `.env` before running `docker-compose up` for the first time. Once the seed has run, editing `.env` won't affect an existing admin — change the password via Settings instead.
 
 ### 4. Stopping and resetting
 
