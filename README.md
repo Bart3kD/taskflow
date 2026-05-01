@@ -91,11 +91,17 @@ FROM_EMAIL=noreply@yourdomain.com
 # Telegram
 TELEGRAM_BOT_TOKEN=123456789:AAF_your_bot_token
 TELEGRAM_BOT_USERNAME=your_bot_username
+
+# Admin account — created on first run, change before starting for the first time
+ADMIN_EMAIL=admin@taskflow.app
+ADMIN_PASSWORD=admin123
+ADMIN_NAME=Admin
 ```
 
 **Notes:**
 - `APP_URL` must be a publicly accessible URL for Telegram webhooks to work. Use [ngrok](https://ngrok.com) for local development: `ngrok http 3000` and set `APP_URL=https://your-ngrok-url.ngrok-free.app`
 - `FROM_EMAIL` must use a domain verified in your Resend dashboard. The default `onboarding@resend.dev` only delivers to your own Resend account email.
+- Once the database has been seeded, changing `ADMIN_*` in `.env` has no effect — use Settings to change the password instead.
 
 ### 3. Start with Docker
 
@@ -111,15 +117,6 @@ This will:
 5. Start the server on port 3000
 
 Open [http://localhost:3000](http://localhost:3000).
-
-**Default admin credentials** (set in `.env` before first run):
-```
-ADMIN_EMAIL=admin@taskflow.app
-ADMIN_PASSWORD=admin123
-ADMIN_NAME=Admin
-```
-
-Change these in `.env` before running `docker-compose up` for the first time. Once the seed has run, editing `.env` won't affect an existing admin — change the password via Settings instead.
 
 ### 4. Stopping and resetting
 
