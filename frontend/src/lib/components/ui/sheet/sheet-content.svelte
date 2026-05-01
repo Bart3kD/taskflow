@@ -26,18 +26,5 @@
 		{...restProps}
 	>
 		{@render children?.()}
-		<DialogPrimitive.Close>
-			{#snippet child({ props })}
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					class="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
-					{...props}
-				>
-					<XIcon class="size-4" />
-					<span class="sr-only">Close</span>
-				</Button>
-			{/snippet}
-		</DialogPrimitive.Close>
 	</DialogPrimitive.Content>
 </DialogPrimitive.Portal>

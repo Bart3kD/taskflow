@@ -292,8 +292,13 @@
 		</p>
 	{/if}
 
-	<Button onclick={handleCreate} disabled={loading || !title.trim()} class="min-w-[9rem]">
-		{loading ? 'Creating…' : 'Create task'}
-	</Button>
+	<div class="flex items-center gap-3">
+		<Button onclick={handleCreate} disabled={loading || !title.trim()} class="min-w-[9rem]">
+			{loading ? 'Creating…' : 'Create task'}
+		</Button>
+		{#if !title.trim()}
+			<p class="text-[0.8125rem] text-muted-foreground">Enter a title to continue.</p>
+		{/if}
+	</div>
 
 </div>

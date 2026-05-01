@@ -35,6 +35,8 @@ export const users = pgTable('users', {
 	role: roleEnum('role').notNull().default('member'),
 	avatarUrl: text('avatar_url'),
 	onboardingCompleted: boolean('onboarding_completed').notNull().default(true),
+	passwordResetToken: text('password_reset_token').unique(),
+	passwordResetExpiresAt: timestamp('password_reset_expires_at'),
 	createdAt: timestamp('created_at').notNull().defaultNow()
 });
 

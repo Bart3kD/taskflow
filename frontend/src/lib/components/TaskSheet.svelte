@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import {
 		ExternalLink, Trash2, Loader2, Check, ChevronsUpDown,
-		RefreshCw, Calendar, User
+		RefreshCw, Calendar, User, X
 	} from 'lucide-svelte';
 	import type { Task } from '$lib/db/schema';
 
@@ -38,7 +38,7 @@
 	$effect(() => {
 		if (!taskId) { taskState = { type: 'idle' }; return; }
 		taskState = { type: 'loading' };
-		saveError = ''; savedOk = false;
+		saveError = ''; savedOk = false; deleting = false;
 		fetch(`/api/tasks/${taskId}`)
 			.then((r) => (r.ok ? r.json() : Promise.reject()))
 			.then((task: Task) => { taskState = { type: 'success', task }; })
@@ -173,9 +173,9 @@
 
 <Sheet.Root {open} onOpenChange={handleOpenChange}>
 	<Sheet.Content>
-		<!-- Header: Open link + Delete -->
+		<!-- Header: Open link + Delete + Close -->
 		<Sheet.Header>
-			<div class="flex items-center justify-between pr-8">
+			<div class="flex items-center justify-between">
 				{#if taskId}
 					<a
 						href="/tasks/{taskId}"
@@ -188,16 +188,25 @@
 					<span></span>
 				{/if}
 
-				{#if userRole === 'admin' && taskState.type === 'success'}
+				<div class="flex items-center gap-1">
+					{#if userRole === 'admin' && taskState.type === 'success'}
+						<button
+							onclick={handleDelete}
+							disabled={deleting}
+							class="flex items-center gap-1 text-[0.75rem] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 px-2 py-1 rounded"
+						>
+							<Trash2 class="size-3.5" />
+							{deleting ? 'Deleting…' : 'Delete'}
+						</button>
+					{/if}
 					<button
-						onclick={handleDelete}
-						disabled={deleting}
-						class="flex items-center gap-1 text-[0.75rem] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+						onclick={onclose}
+						class="flex items-center justify-center size-7 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+						aria-label="Close"
 					>
-						<Trash2 class="size-3.5" />
-						{deleting ? 'Deleting…' : 'Delete'}
+						<X class="size-4" />
 					</button>
-				{/if}
+				</div>
 			</div>
 		</Sheet.Header>
 

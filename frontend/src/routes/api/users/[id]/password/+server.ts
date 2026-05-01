@@ -11,13 +11,14 @@ export const POST: RequestHandler = async (event) => {
 	const auth = await requireAuth(event);
 	const { id } = event.params;
 
-	if (auth.role !== 'admin' && auth.userId !== id) throw error(403, 'Forbidden');
+	if (auth.userId !== id) throw error(403, 'You can only change your own password');
 
 	const body = await event.request.json().catch(() => null);
 	const parsed = zChangePassword.safeParse(body);
 	if (!parsed.success) throw error(400, 'Invalid request');
 
 	const { currentPassword, newPassword } = parsed.data;
+	if (!currentPassword) throw error(400, 'Current password is required');
 
 	const [user] = await db
 		.select({ id: users.id, passwordHash: users.passwordHash })
@@ -27,11 +28,8 @@ export const POST: RequestHandler = async (event) => {
 
 	if (!user) throw error(404, 'User not found');
 
-	if (auth.role !== 'admin') {
-		if (!currentPassword) throw error(400, 'Current password is required');
-		const valid = await bcrypt.compare(currentPassword, user.passwordHash);
-		if (!valid) throw error(400, 'Current password is incorrect');
-	}
+	const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+	if (!valid) throw error(400, 'Current password is incorrect');
 
 	const newHash = await bcrypt.hash(newPassword, 12);
 	await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, id));

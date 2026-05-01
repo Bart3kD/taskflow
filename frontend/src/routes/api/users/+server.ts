@@ -8,6 +8,7 @@ import { zCreateUser } from '$lib/types';
 import { sendWelcomeEmail } from '$lib/notifications/email';
 import { APP_URL } from '$env/static/private';
 import bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
 
 function generateTempPassword(): string {
 	return randomBytes(9).toString('base64url');
@@ -38,6 +39,9 @@ export const POST: RequestHandler = async (event) => {
 	if (!parsed.success) throw error(400, JSON.stringify(parsed.error.flatten()));
 
 	const { name, email, role, telegramChatId } = parsed.data;
+
+	const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+	if (existing.length > 0) throw error(409, 'A member with this email already exists');
 
 	const tempPassword = generateTempPassword();
 	const passwordHash = await bcrypt.hash(tempPassword, 12);

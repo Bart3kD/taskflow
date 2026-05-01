@@ -208,12 +208,12 @@
 		</a>
 
 		<div class="flex items-center gap-5">
-			<div
-				class="size-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 select-none"
-			>
-				<span class="text-primary text-[1.5rem] font-bold tracking-tight"
-					>{initials(data.member.name)}</span
-				>
+			<div class="size-16 rounded-2xl overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center select-none">
+				{#if data.member.avatarUrl}
+					<img src={data.member.avatarUrl} alt={data.member.name} class="size-full object-cover" />
+				{:else}
+					<span class="text-primary text-[1.5rem] font-bold tracking-tight">{initials(data.member.name)}</span>
+				{/if}
 			</div>
 			<div class="flex-1 min-w-0">
 				<div class="flex items-center gap-3 flex-wrap">
@@ -238,7 +238,7 @@
 	<!-- Content grid -->
 	<div class="grid lg:grid-cols-[1fr_1.25fr] gap-6 items-start">
 		<!-- Left column: Profile + Telegram -->
-		<div class="space-y-5">
+		<div class="space-y-5 min-w-0">
 			<!-- Profile section -->
 			<section class="rounded-xl border border-border bg-card p-6 space-y-5">
 				<div class="flex items-center gap-2">
@@ -317,9 +317,9 @@
 							the bot connects automatically. Expires in 24h.
 						</p>
 						<div
-							class="flex items-center gap-2 rounded-md bg-background border border-border px-3 py-2"
+							class="flex items-center gap-2 rounded-md bg-background border border-border px-3 py-2 overflow-hidden"
 						>
-							<code class="flex-1 truncate text-[0.75rem] text-foreground">{telegramLinkUrl}</code>
+							<code class="flex-1 truncate text-[0.75rem] text-foreground min-w-0">{telegramLinkUrl}</code>
 							<button
 								type="button"
 								onclick={copyLink}

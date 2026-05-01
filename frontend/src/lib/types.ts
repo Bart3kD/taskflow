@@ -44,6 +44,15 @@ export const zUpdateUser = z.object({
 	role: z.enum(['admin', 'member']).optional()
 });
 
+export const zForgotPassword = z.object({
+	email: z.email()
+});
+
+export const zResetPassword = z.object({
+	token: z.string().min(1),
+	newPassword: z.string().min(8)
+});
+
 export const zCompleteOnboarding = z.object({
 	newPassword: z.string().min(8),
 	avatarUrl: z.string().nullable().optional()

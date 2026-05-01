@@ -6,6 +6,27 @@ function getResend(): Resend {
 	return new Resend(RESEND_API_KEY);
 }
 
+export async function sendPasswordResetEmail(
+	user: Pick<User, 'email' | 'name'>,
+	token: string,
+	appUrl: string
+): Promise<void> {
+	const resend = getResend();
+	const resetUrl = `${appUrl}/reset-password/${token}`;
+
+	await resend.emails.send({
+		from: FROM_EMAIL,
+		to: user.email,
+		subject: 'Reset your TaskFlow password',
+		html: `
+			<p>Hi ${user.name},</p>
+			<p>We received a request to reset your TaskFlow password. Click the button below to set a new password:</p>
+			<p><a href="${resetUrl}" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Reset password</a></p>
+			<p style="color:#6b7280;font-size:0.875rem;">This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+		`
+	});
+}
+
 export async function sendWelcomeEmail(
 	user: Pick<User, 'email' | 'name'>,
 	tempPassword: string,

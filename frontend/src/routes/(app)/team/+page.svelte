@@ -42,7 +42,8 @@
 			addEmail = '';
 			location.reload();
 		} else {
-			addError = 'Failed to add user.';
+			const body = await res.json().catch(() => null);
+			addError = body?.message ?? 'Failed to add user.';
 		}
 	}
 
@@ -64,7 +65,7 @@
 
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
-		<div class="space-y-2">
+		<div class="space-y-3">
 			<h1 class="text-[1.5rem] font-bold">Team</h1>
 			<div class="relative">
 				<Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
@@ -90,12 +91,12 @@
 				</Dialog.Header>
 				<form onsubmit={addUser} class="space-y-4 mt-2">
 					<div class="grid grid-cols-2 gap-3">
-						<div class="space-y-1.5">
-							<label class="text-[0.8125rem] font-medium" for="add-name">Name</label>
-							<input id="add-name" bind:value={addName} required class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-[0.875rem]" />
+						<div>
+							<label class="block text-[0.8125rem] font-medium mb-2" for="add-name">Name</label>
+							<input id="add-name" bind:value={addName} required class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ring" />
 						</div>
-						<div class="space-y-1.5">
-							<label class="text-[0.8125rem] font-medium" for="add-role">Role</label>
+						<div>
+							<label class="block text-[0.8125rem] font-medium mb-2" for="add-role">Role</label>
 							<Select.Root bind:value={addRole}>
 								<Select.Trigger class="w-full">
 									<Select.Value label={addRole === 'admin' ? 'Admin' : 'Member'} />
@@ -107,9 +108,9 @@
 							</Select.Root>
 						</div>
 					</div>
-					<div class="space-y-1.5">
-						<label class="text-[0.8125rem] font-medium" for="add-email">Email</label>
-						<input id="add-email" type="email" bind:value={addEmail} required class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-[0.875rem]" />
+					<div>
+						<label class="block text-[0.8125rem] font-medium mb-2" for="add-email">Email</label>
+						<input id="add-email" type="email" bind:value={addEmail} required class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ring" />
 					</div>
 					{#if addError}
 						<p class="text-[0.875rem] text-destructive">{addError}</p>
