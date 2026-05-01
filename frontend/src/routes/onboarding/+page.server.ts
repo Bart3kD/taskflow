@@ -10,7 +10,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	if (!token) throw redirect(302, '/login');
 
 	const payload = await verifyToken(token);
-	if (!payload) throw redirect(302, '/login');
+	if (!payload) {
+		cookies.delete('session', { path: '/' });
+		throw redirect(302, '/login');
+	}
 
 	const [user] = await db
 		.select({
@@ -25,7 +28,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		.where(eq(users.id, payload.userId))
 		.limit(1);
 
-	if (!user) throw redirect(302, '/login');
+	if (!user) {
+		cookies.delete('session', { path: '/' });
+		throw redirect(302, '/login');
+	}
 	if (user.role === 'admin' || user.onboardingCompleted) throw redirect(302, '/dashboard');
 
 	return { user };
