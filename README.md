@@ -71,10 +71,10 @@ cd taskflow
 Copy the example and fill in your values:
 
 ```bash
-cp frontend/.env.example .env
+cp .env.example .env
 ```
 
-Edit the root `.env` file:
+Edit `.env`:
 
 ```env
 # Auth
@@ -147,17 +147,18 @@ cd frontend
 bun install
 ```
 
-Create `frontend/.env` with your local values:
+Create `frontend/.env` based on the root example, adding `DATABASE_URL` and adjusting `APP_URL`:
+
+```bash
+cp .env.example frontend/.env
+```
+
+Then add/adjust in `frontend/.env`:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/taskflow
-JWT_SECRET=your-dev-secret
 NODE_ENV=development
-APP_URL=http://localhost:5173
-RESEND_API_KEY=re_your_api_key
-FROM_EMAIL=onboarding@resend.dev
-TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_BOT_USERNAME=your_bot_username
+APP_URL=http://localhost:5173   # or your ngrok URL
 ```
 
 ### Run
