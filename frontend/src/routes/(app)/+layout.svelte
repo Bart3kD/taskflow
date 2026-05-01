@@ -26,6 +26,10 @@
 	function isActive(href: string) {
 		return $page.url.pathname === href || $page.url.pathname.startsWith(href + '/');
 	}
+
+	function initials(name: string) {
+		return name.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+	}
 </script>
 
 <div class="flex h-screen bg-background">
@@ -51,9 +55,18 @@
 		</nav>
 
 		<div class="border-t border-sidebar-border p-3">
-			<div class="mb-2 px-3 py-1">
-				<p class="text-[0.75rem] font-medium text-sidebar-foreground">{data.user.name}</p>
-				<p class="text-[0.6875rem] text-muted-foreground capitalize">{data.user.role}</p>
+			<div class="mb-2 flex items-center gap-2.5 px-3 py-1">
+				<div class="size-7 rounded-full overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center">
+					{#if data.user.avatarUrl}
+						<img src={data.user.avatarUrl} alt={data.user.name} class="size-full object-cover" />
+					{:else}
+						<span class="text-primary text-[0.625rem] font-bold leading-none">{initials(data.user.name)}</span>
+					{/if}
+				</div>
+				<div class="min-w-0">
+					<p class="text-[0.75rem] font-medium text-sidebar-foreground truncate">{data.user.name}</p>
+					<p class="text-[0.6875rem] text-muted-foreground capitalize">{data.user.role}</p>
+				</div>
 			</div>
 			<button
 				onclick={logout}

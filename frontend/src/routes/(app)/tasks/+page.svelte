@@ -5,13 +5,14 @@
 	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
 	import TaskSheet from '$lib/components/TaskSheet.svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { untrack } from 'svelte';
 	import { Plus, AlertCircle, Search } from 'lucide-svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	let search = $state('');
 	let filterStatus = $state<string[]>([]);
-	let filterMember = $state<string[]>([]);
+	let filterMember = $state<string[]>(untrack(() => data.initialMember));
 	let filterScope = $state<'all' | 'mine' | 'team'>('all');
 
 	const scopeOptions: Array<{ value: 'all' | 'mine' | 'team'; label: string }> = [

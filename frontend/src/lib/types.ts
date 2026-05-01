@@ -40,7 +40,13 @@ export const zUpdateUser = z.object({
 	name: z.string().min(1).optional(),
 	email: z.email().optional(),
 	telegramChatId: z.string().nullable().optional(),
+	avatarUrl: z.string().nullable().optional(),
 	role: z.enum(['admin', 'member']).optional()
+});
+
+export const zCompleteOnboarding = z.object({
+	newPassword: z.string().min(8),
+	avatarUrl: z.string().nullable().optional()
 });
 
 export const zRecurrenceConfig = z.object({

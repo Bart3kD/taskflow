@@ -14,6 +14,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 			name: users.name,
 			email: users.email,
 			role: users.role,
+			avatarUrl: users.avatarUrl,
 			telegramChatId: users.telegramChatId,
 			reportChannel: notificationSchedules.reportChannel,
 			reminderChannel: notificationSchedules.reminderChannel

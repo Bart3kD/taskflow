@@ -1,11 +1,11 @@
 import { redirect } from '@sveltejs/kit';
-import type { LayoutServerLoad } from './$types';
+import type { PageServerLoad } from './$types';
 import { verifyToken } from '$lib/auth/jwt';
 import { db } from '$lib/db';
 import { users } from '$lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export const load: LayoutServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies }) => {
 	const token = cookies.get('session');
 	if (!token) throw redirect(302, '/login');
 
@@ -13,13 +13,20 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
 	if (!payload) throw redirect(302, '/login');
 
 	const [user] = await db
-		.select({ id: users.id, name: users.name, role: users.role, onboardingCompleted: users.onboardingCompleted, avatarUrl: users.avatarUrl })
+		.select({
+			id: users.id,
+			name: users.name,
+			email: users.email,
+			role: users.role,
+			telegramChatId: users.telegramChatId,
+			onboardingCompleted: users.onboardingCompleted
+		})
 		.from(users)
 		.where(eq(users.id, payload.userId))
 		.limit(1);
 
 	if (!user) throw redirect(302, '/login');
-	if (user.role === 'member' && !user.onboardingCompleted) throw redirect(302, '/onboarding');
+	if (user.role === 'admin' || user.onboardingCompleted) throw redirect(302, '/dashboard');
 
-	return { user: { id: user.id, name: user.name, role: user.role, avatarUrl: user.avatarUrl } };
+	return { user };
 };

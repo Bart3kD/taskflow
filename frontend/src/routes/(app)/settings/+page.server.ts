@@ -14,7 +14,8 @@ export const load: PageServerLoad = async (event) => {
 			name: users.name,
 			email: users.email,
 			role: users.role,
-			telegramChatId: users.telegramChatId
+			telegramChatId: users.telegramChatId,
+			avatarUrl: users.avatarUrl
 		})
 		.from(users)
 		.where(eq(users.id, auth.userId))

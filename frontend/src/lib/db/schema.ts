@@ -6,6 +6,7 @@ import {
 	pgEnum,
 	json,
 	integer,
+	boolean,
 	uniqueIndex
 } from 'drizzle-orm/pg-core';
 
@@ -32,6 +33,8 @@ export const users = pgTable('users', {
 	telegramLinkToken: text('telegram_link_token').unique(),
 	telegramLinkExpiresAt: timestamp('telegram_link_expires_at'),
 	role: roleEnum('role').notNull().default('member'),
+	avatarUrl: text('avatar_url'),
+	onboardingCompleted: boolean('onboarding_completed').notNull().default(true),
 	createdAt: timestamp('created_at').notNull().defaultNow()
 });
 

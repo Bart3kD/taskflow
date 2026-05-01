@@ -44,7 +44,7 @@ export const POST: RequestHandler = async (event) => {
 
 	const [user] = await db
 		.insert(users)
-		.values({ name, email, passwordHash, role, telegramChatId })
+		.values({ name, email, passwordHash, role, telegramChatId, onboardingCompleted: false })
 		.returning({
 			id: users.id,
 			name: users.name,
@@ -55,9 +55,13 @@ export const POST: RequestHandler = async (event) => {
 
 	await db.insert(notificationSchedules).values({ userId: user.id });
 
-	await sendWelcomeEmail({ email, name }, tempPassword, APP_URL).catch((err) => {
+	let emailSent = false;
+	try {
+		await sendWelcomeEmail({ email, name }, tempPassword, APP_URL);
+		emailSent = true;
+	} catch (err) {
 		console.error('Failed to send welcome email:', err);
-	});
+	}
 
-	return json(user, { status: 201 });
+	return json({ ...user, tempPassword, emailSent }, { status: 201 });
 };

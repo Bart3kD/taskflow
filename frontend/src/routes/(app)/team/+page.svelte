@@ -128,8 +128,12 @@
 		{#each others as member}
 			<Card.Root class="flex flex-col p-0 overflow-hidden">
 				<!-- Image -->
-				<div class="w-full aspect-[3/2] bg-primary/10 flex items-center justify-center select-none">
-					<span class="text-primary text-[2rem] font-semibold">{initials(member.name)}</span>
+				<div class="w-full aspect-[3/2] bg-primary/10 flex items-center justify-center select-none overflow-hidden">
+					{#if member.avatarUrl}
+						<img src={member.avatarUrl} alt={member.name} class="w-full h-full object-cover" />
+					{:else}
+						<span class="text-primary text-[2rem] font-semibold">{initials(member.name)}</span>
+					{/if}
 				</div>
 
 				<!-- Content (badge positioned here) -->

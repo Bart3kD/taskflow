@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import SegmentedControl from '$lib/components/SegmentedControl.svelte';
 	import { untrack } from 'svelte';
 
@@ -15,6 +16,47 @@
 	let userError = $state('');
 	let userLoading = $state(false);
 	let userSuccess = $state(false);
+
+	// Delete
+	let deleteDialogOpen = $state(false);
+	let deleteLoading = $state(false);
+	let deleteError = $state('');
+	let hasTasks = $state(false);
+	let deleteTasksLoading = $state(false);
+
+	async function deleteMember() {
+		deleteLoading = true;
+		deleteError = '';
+		hasTasks = false;
+		const res = await fetch(`/api/users/${data.member.id}`, { method: 'DELETE' });
+		deleteLoading = false;
+		if (res.ok) {
+			goto('/team');
+		} else {
+			const body = await res.json().catch(() => null);
+			deleteError = body?.message ?? 'Failed to delete member.';
+			if (res.status === 409) hasTasks = true;
+		}
+	}
+
+	async function deleteAllTasksThenMember() {
+		deleteTasksLoading = true;
+		deleteError = '';
+		const tasksRes = await fetch(`/api/users/${data.member.id}/tasks`, { method: 'DELETE' });
+		if (!tasksRes.ok) {
+			deleteTasksLoading = false;
+			deleteError = 'Failed to delete tasks.';
+			return;
+		}
+		const memberRes = await fetch(`/api/users/${data.member.id}`, { method: 'DELETE' });
+		deleteTasksLoading = false;
+		if (memberRes.ok) {
+			goto('/team');
+		} else {
+			const body = await memberRes.json().catch(() => null);
+			deleteError = body?.message ?? 'Failed to delete member.';
+		}
+	}
 
 	// Telegram connection
 	let telegramLinkUrl = $state('');
@@ -187,6 +229,9 @@
 				</div>
 				<p class="text-muted-foreground text-[0.875rem] mt-0.5">{data.member.email}</p>
 			</div>
+			<Button variant="outline" size="sm" onclick={() => (deleteDialogOpen = true)} class="text-destructive hover:text-destructive hover:border-destructive shrink-0">
+				Delete member
+			</Button>
 		</div>
 	</div>
 
@@ -396,3 +441,51 @@
 		</section>
 	</div>
 </div>
+
+<Dialog.Root bind:open={deleteDialogOpen} onOpenChange={(open) => { if (!open) { hasTasks = false; deleteError = ''; } }}>
+	<Dialog.Content class="sm:max-w-sm">
+		<Dialog.Header>
+			<Dialog.Title>Delete {data.member.name}?</Dialog.Title>
+			<Dialog.Description>
+				This will permanently remove the member and all their data. This action cannot be undone.
+			</Dialog.Description>
+		</Dialog.Header>
+
+		{#if deleteError}
+			<p class="text-[0.8125rem] text-destructive">{deleteError}</p>
+		{/if}
+
+		{#if hasTasks}
+			<div class="flex flex-col gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					href="/tasks?member={data.member.id}"
+					class="justify-start"
+				>
+					Go to their tasks and reassign →
+				</Button>
+				<Button
+					variant="destructive"
+					size="sm"
+					onclick={deleteAllTasksThenMember}
+					disabled={deleteTasksLoading}
+					class="justify-start"
+				>
+					{deleteTasksLoading ? 'Deleting…' : 'Delete all their tasks and remove member'}
+				</Button>
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			{#if !hasTasks}
+				<Button variant="destructive" onclick={deleteMember} disabled={deleteLoading}>
+					{deleteLoading ? 'Deleting…' : 'Delete member'}
+				</Button>
+			{/if}
+			<Button variant="outline" onclick={() => (deleteDialogOpen = false)} disabled={deleteLoading || deleteTasksLoading}>
+				Cancel
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

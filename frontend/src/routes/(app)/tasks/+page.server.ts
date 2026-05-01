@@ -3,7 +3,7 @@ import { db } from '$lib/db';
 import { tasks, users } from '$lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, url }) => {
 	const { user } = await parent();
 
 	const [rows, members] = await Promise.all([
@@ -38,5 +38,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 			: Promise.resolve([])
 	]);
 
-	return { tasks: rows, members };
+	const initialMember = url.searchParams.getAll('member');
+	return { tasks: rows, members, initialMember };
 };

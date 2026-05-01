@@ -1,10 +1,10 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/db';
-import { users, notificationSchedules } from '$lib/db/schema';
+import { users, notificationSchedules, tasks, notificationLogs } from '$lib/db/schema';
 import { requireAdmin, requireAuth } from '$lib/auth/jwt';
 import { zUpdateUser, zUpdateNotificationSchedule } from '$lib/types';
-import { eq } from 'drizzle-orm';
+import { eq, or, count } from 'drizzle-orm';
 
 export const GET: RequestHandler = async (event) => {
 	const auth = await requireAuth(event);
@@ -18,6 +18,7 @@ export const GET: RequestHandler = async (event) => {
 			name: users.name,
 			email: users.email,
 			telegramChatId: users.telegramChatId,
+			avatarUrl: users.avatarUrl,
 			role: users.role,
 			createdAt: users.createdAt
 		})
@@ -69,6 +70,15 @@ export const DELETE: RequestHandler = async (event) => {
 	await requireAdmin(event);
 	const { id } = event.params;
 
+	const [{ taskCount }] = await db
+		.select({ taskCount: count() })
+		.from(tasks)
+		.where(or(eq(tasks.assignedTo, id), eq(tasks.createdBy, id)));
+
+	if (taskCount > 0)
+		throw error(409, `Cannot delete: member has ${taskCount} task${taskCount === 1 ? '' : 's'}. Reassign or delete them first.`);
+
+	await db.delete(notificationLogs).where(eq(notificationLogs.userId, id));
 	await db.delete(notificationSchedules).where(eq(notificationSchedules.userId, id));
 	const [deleted] = await db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
 
