@@ -4,7 +4,7 @@ import { requireAuth } from '$lib/auth/jwt';
 import { db } from '$lib/db';
 import { users } from '$lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { TELEGRAM_BOT_USERNAME } from '$env/static/private';
+import { TELEGRAM_BOT_USERNAME } from '$lib/env';
 
 export const POST: RequestHandler = async (event) => {
 	const auth = await requireAuth(event);

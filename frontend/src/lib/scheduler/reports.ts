@@ -3,7 +3,7 @@ import { tasks, users, notificationSchedules, notificationLogs, statusTokens } f
 import { eq, ne, and, gte, desc } from 'drizzle-orm';
 import { sendReportEmail } from '$lib/notifications/email';
 import { sendReportTelegram } from '$lib/notifications/telegram';
-import { APP_URL } from '$env/static/private';
+import { APP_URL } from '$lib/env';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

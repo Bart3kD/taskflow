@@ -3,7 +3,7 @@ import { tasks, users, notificationSchedules } from '$lib/db/schema';
 import { eq, isNull, inArray } from 'drizzle-orm';
 import { sendAssignmentEmail } from '$lib/notifications/email';
 import { sendAssignmentTelegram } from '$lib/notifications/telegram';
-import { APP_URL } from '$env/static/private';
+import { APP_URL } from '$lib/env';
 
 type TaskEntry = { id: string; title: string; deadlineDate: Date | null };
 

@@ -6,7 +6,7 @@ import { users, notificationSchedules } from '$lib/db/schema';
 import { requireAdmin } from '$lib/auth/jwt';
 import { zCreateUser } from '$lib/types';
 import { sendWelcomeEmail } from '$lib/notifications/email';
-import { APP_URL } from '$env/static/private';
+import { APP_URL } from '$lib/env';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 

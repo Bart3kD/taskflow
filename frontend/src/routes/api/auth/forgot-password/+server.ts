@@ -4,7 +4,7 @@ import { db } from '$lib/db';
 import { users } from '$lib/db/schema';
 import { zForgotPassword } from '$lib/types';
 import { sendPasswordResetEmail } from '$lib/notifications/email';
-import { APP_URL } from '$env/static/private';
+import { APP_URL } from '$lib/env';
 import { eq } from 'drizzle-orm';
 
 export const POST: RequestHandler = async ({ request }) => {

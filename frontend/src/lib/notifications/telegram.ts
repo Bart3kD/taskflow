@@ -1,5 +1,5 @@
 import type { Task, User } from '$lib/db/schema';
-import { TELEGRAM_BOT_TOKEN } from '$env/static/private';
+import { TELEGRAM_BOT_TOKEN } from '$lib/env';
 
 type InlineKeyboard = Array<Array<{ text: string; callback_data: string }>>;
 

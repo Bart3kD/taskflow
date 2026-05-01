@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import type { RequestEvent } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
-import { JWT_SECRET } from '$env/static/private';
+import { JWT_SECRET } from '$lib/env';
 
 type TokenPayload = {
 	userId: string;

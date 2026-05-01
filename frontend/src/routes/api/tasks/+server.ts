@@ -7,7 +7,7 @@ import { zCreateTask } from '$lib/types';
 import { eq } from 'drizzle-orm';
 import { sendAssignmentEmail } from '$lib/notifications/email';
 import { sendAssignmentTelegram } from '$lib/notifications/telegram';
-import { APP_URL } from '$env/static/private';
+import { APP_URL } from '$lib/env';
 
 export const GET: RequestHandler = async (event) => {
 	const auth = await requireAuth(event);

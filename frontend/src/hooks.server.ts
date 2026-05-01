@@ -3,7 +3,7 @@ import { processReminders } from '$lib/scheduler/reminders';
 import { processReports } from '$lib/scheduler/reports';
 import { processOverdue } from '$lib/scheduler/overdue';
 import { processAssignmentNotifications } from '$lib/scheduler/assignments';
-import { TELEGRAM_BOT_TOKEN, APP_URL } from '$env/static/private';
+import { TELEGRAM_BOT_TOKEN, APP_URL } from '$lib/env';
 
 if (TELEGRAM_BOT_TOKEN && APP_URL && !APP_URL.includes('localhost')) {
 	fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook`, {

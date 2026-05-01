@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { RESEND_API_KEY, FROM_EMAIL } from '$env/static/private';
+import { RESEND_API_KEY, FROM_EMAIL } from '$lib/env';
 import type { Task, User } from '$lib/db/schema';
 
 function getResend(): Resend {
