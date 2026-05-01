@@ -14,6 +14,7 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/bun.lock ./
 COPY --from=builder /app/src/lib/db ./src/lib/db
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./
 COPY entrypoint.sh ./
 RUN bun install --frozen-lockfile && chmod +x entrypoint.sh
