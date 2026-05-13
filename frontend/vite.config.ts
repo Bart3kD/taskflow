@@ -5,6 +5,6 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
-		allowedHosts: ["b545-89-72-246-237.ngrok-free.app"]
+		allowedHosts: ["proactive-porthole-unbalance.ngrok-free.dev"]
 	}
 });

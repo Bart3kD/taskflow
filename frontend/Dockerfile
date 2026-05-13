@@ -17,7 +17,7 @@ COPY --from=builder /app/src/lib/db ./src/lib/db
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./
 COPY entrypoint.sh ./
-RUN bun install --frozen-lockfile && chmod +x entrypoint.sh
+RUN sed -i 's/\r//' entrypoint.sh && bun install --frozen-lockfile && chmod +x entrypoint.sh
 
 EXPOSE 3000
 ENTRYPOINT ["./entrypoint.sh"]

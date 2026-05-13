@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/db';
-import { tasks, statusTokens, users, notificationSchedules } from '$lib/db/schema';
+import { tasks, statusTokens, users, notificationSchedules, notificationLogs } from '$lib/db/schema';
 import { requireAuth } from '$lib/auth/jwt';
 import { zUpdateTask } from '$lib/types';
 import { eq } from 'drizzle-orm';
@@ -67,6 +67,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 	if (!row) throw error(404, 'Task not found');
 
+	await db.delete(notificationLogs).where(eq(notificationLogs.taskId, id));
 	await db.delete(statusTokens).where(eq(statusTokens.taskId, id));
 	await db.delete(tasks).where(eq(tasks.id, id));
 
