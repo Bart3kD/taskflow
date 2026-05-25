@@ -181,6 +181,27 @@ bun run dev
 | `bun run db:seed` | Seed the admin user |
 | `bun run db:studio` | Open Drizzle Studio (visual DB browser) |
 
+### Commands for cron in supabase
+Setup scheduler
+```sql
+select cron.schedule(
+    'taskflow-scheduler',
+    '0 * * * *',
+    $$
+    select net.http_post(
+      url := 'https://taskflow-gamma-jade.vercel.app/api/scheduler',
+      headers := '{"Authorization": "Bearer rtNPCeZ2ITk19cc9dy33hccXVjo0x3s2kN/rJoi1mqZ=", "Content-Type": "application/json"}'::jsonb,
+      body := '{}'::jsonb
+    )
+    $$
+  );
+```
+
+List jobs
+```sql
+select * from cron.job;
+```
+
 ### Schema changes workflow
 
 1. Edit `src/lib/db/schema.ts`
