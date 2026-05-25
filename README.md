@@ -189,8 +189,8 @@ select cron.schedule(
     '0 * * * *',
     $$
     select net.http_post(
-      url := 'https://taskflow-gamma-jade.vercel.app/api/scheduler',
-      headers := '{"Authorization": "Bearer rtNPCeZ2ITk19cc9dy33hccXVjo0x3s2kN/rJoi1mqZ=", "Content-Type": "application/json"}'::jsonb,
+      url := 'https://your-domain/api/scheduler',
+      headers := '{"Authorization": "Bearer YOUR_CRON_SECRET=", "Content-Type": "application/json"}'::jsonb,
       body := '{}'::jsonb
     )
     $$
