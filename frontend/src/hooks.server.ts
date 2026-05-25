@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import { dev } from '$app/environment';
 import { processReminders } from '$lib/scheduler/reminders';
 import { processReports } from '$lib/scheduler/reports';
 import { processOverdue } from '$lib/scheduler/overdue';
@@ -19,17 +20,20 @@ if (TELEGRAM_BOT_TOKEN && APP_URL && !APP_URL.includes('localhost')) {
 		.catch((err) => console.error('Telegram webhook registration failed:', err));
 }
 
-const g = globalThis as typeof globalThis & { __cronRegistered?: boolean };
-if (!g.__cronRegistered) {
-	g.__cronRegistered = true;
-	cron.schedule('0 * * * *', async () => {
-		try {
-			await processOverdue();
-			await processAssignmentNotifications();
-			await processReminders();
-			await processReports();
-		} catch (err) {
-			console.error('Scheduler error:', err);
-		}
-	});
+// On Vercel the cron is handled by vercel.json — node-cron only runs locally
+if (dev) {
+	const g = globalThis as typeof globalThis & { __cronRegistered?: boolean };
+	if (!g.__cronRegistered) {
+		g.__cronRegistered = true;
+		cron.schedule('0 * * * *', async () => {
+			try {
+				await processOverdue();
+				await processAssignmentNotifications();
+				await processReminders();
+				await processReports();
+			} catch (err) {
+				console.error('Scheduler error:', err);
+			}
+		});
+	}
 }
