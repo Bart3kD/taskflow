@@ -141,7 +141,7 @@
 	}
 </script>
 
-<div class="max-w-[44rem]">
+<div class="w-full max-w-[44rem]">
 
 	<!-- ##############################
 	     Navigation bar
@@ -223,7 +223,7 @@
 	<!-- ##############################
 	     Assignee + Task type
 	     ############################## -->
-	<div class="grid grid-cols-2 gap-6 mb-8">
+	<div class="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2">
 		<!-- Assignee -->
 		<div>
 			<div class="flex items-center gap-1.5 mb-2.5">

@@ -138,7 +138,7 @@
 	}
 </script>
 
-<div class="max-w-lg space-y-8">
+<div class="w-full max-w-lg space-y-8">
 	<!-- Page header -->
 	<div class="flex items-center gap-5">
 		<div class="relative shrink-0 group">

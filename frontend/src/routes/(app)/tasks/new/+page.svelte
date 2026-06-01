@@ -88,7 +88,7 @@
 	}
 </script>
 
-<div class="max-w-[44rem]">
+<div class="w-full max-w-[44rem]">
 
 	<!-- Navigation -->
 	<div class="mb-10">
@@ -128,7 +128,7 @@
 	</div>
 
 	<!-- Assignee + Task type -->
-	<div class="grid grid-cols-2 gap-6 mb-8">
+	<div class="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2">
 		<div>
 			<div class="flex items-center gap-1.5 mb-2.5">
 				<User class="size-3 text-muted-foreground" />

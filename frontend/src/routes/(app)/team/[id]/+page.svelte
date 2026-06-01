@@ -185,7 +185,7 @@
 	];
 </script>
 
-<div class="space-y-8 max-w-4xl">
+<div class="w-full space-y-8 max-w-4xl">
 	<!-- Page header -->
 	<div>
 		<a
@@ -207,7 +207,7 @@
 			Back to team
 		</a>
 
-		<div class="flex items-center gap-5">
+		<div class="flex flex-wrap items-center gap-5">
 			<div class="size-16 rounded-2xl overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center select-none">
 				{#if data.member.avatarUrl}
 					<img src={data.member.avatarUrl} alt={data.member.name} class="size-full object-cover" />

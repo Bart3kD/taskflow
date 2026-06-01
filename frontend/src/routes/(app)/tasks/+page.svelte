@@ -145,6 +145,7 @@
 
 	<!-- Task table -->
 	<div class="rounded-xl border border-border bg-card overflow-hidden">
+		<div class="overflow-x-auto">
 		{#if filtered.length === 0}
 			<div class="flex flex-col items-center gap-3 py-20 text-muted-foreground">
 				<AlertCircle class="size-7 opacity-40" />
@@ -230,6 +231,7 @@
 				</tbody>
 			</table>
 		{/if}
+		</div>
 	</div>
 
 	{#if filtered.length > 0}
