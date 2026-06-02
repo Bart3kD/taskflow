@@ -165,44 +165,47 @@
 		</div>
 
 		{#if data.user.role === 'admin'}
-			<div class="flex flex-wrap items-center gap-2 shrink-0">
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={clearReminderLogs}
-					disabled={clearingLogs}
-					class="gap-1.5 text-muted-foreground"
-				>
-					<Trash2 class="size-3.5" />
-					{clearingLogs ? 'Clearing…' : 'Clear logs'}
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={runScheduler}
-					disabled={schedulerRunning}
-					class="gap-1.5 {schedulerResult === 'ok'
-						? 'border-[var(--color-status-green)] text-[var(--color-status-green)]'
-						: schedulerResult === 'error'
-							? 'border-destructive text-destructive'
-							: 'text-muted-foreground'}"
-				>
-					<Play class="size-3.5" />
-					{schedulerRunning
-						? 'Running…'
-						: schedulerResult === 'ok'
-							? 'Done'
-							: schedulerResult === 'error'
-								? 'Error'
-								: 'Run scheduler'}
-				</Button>
-				<Button href="/tasks/new" class="gap-1.5">
-					<Plus class="size-4" />
-					New task
-				</Button>
-			</div>
+			<Button href="/tasks/new" class="gap-1.5 shrink-0">
+				<Plus class="size-4" />
+				New task
+			</Button>
 		{/if}
 	</div>
+
+	{#if data.user.role === 'admin'}
+		<div class="flex items-center gap-2">
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={clearReminderLogs}
+				disabled={clearingLogs}
+				class="gap-1.5 text-muted-foreground"
+			>
+				<Trash2 class="size-3.5" />
+				{clearingLogs ? 'Clearing…' : 'Clear logs'}
+			</Button>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={runScheduler}
+				disabled={schedulerRunning}
+				class="gap-1.5 {schedulerResult === 'ok'
+					? 'border-[var(--color-status-green)] text-[var(--color-status-green)]'
+					: schedulerResult === 'error'
+						? 'border-destructive text-destructive'
+						: 'text-muted-foreground'}"
+			>
+				<Play class="size-3.5" />
+				{schedulerRunning
+					? 'Running…'
+					: schedulerResult === 'ok'
+						? 'Done'
+						: schedulerResult === 'error'
+							? 'Error'
+							: 'Run scheduler'}
+			</Button>
+		</div>
+	{/if}
 
 	<!-- Stat cards -->
 	<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
